@@ -7,10 +7,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <!-- Telegram Web App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Supabase CDN (последняя версия на 2026) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* Твой предыдущий стиль полностью сохраняем, без изменений */
+  <style>
     :root {
       --bg-dark: #001028;
       --chelsea-blue: #034694;
@@ -140,41 +141,106 @@
 <body>
 
   <main>
-    <div class="hero">
+    <div>
       <h1>CHELSEA FC</h1>
       <div class="location">KAZAKHSTAN</div>
-
-      <div class="buttons">
-        <button id="login-btn" class="btn btn-primary">ВОЙТИ ЧЕРЕЗ TELEGRAM</button>
-      </div>
+      <div id="status">Загрузка... Пожалуйста, подождите</div>
+      
+      <form id="reg-form">
+        <input type="text" id="full_name" placeholder="Ваше ФИО (обязательно)" required>
+        <input type="email" id="email" placeholder="Email (опционально)">
+        <button type="submit">Зарегистрироваться и продолжить</button>
+      </form>
     </div>
   </main>
 
-  <footer>
-    COYB! • Chelsea FC Supporters Club Kazakhstan • 2026
-  </footer>
+  <footer>COYB! • Chelsea FC Supporters Club Kazakhstan • 2026</footer>
 
   <script>
-    // Простой placeholder для входа (позже подключим Supabase)
-    document.getElementById('login-btn').addEventListener('click', () => {
-      if (window.Telegram?.WebApp) {
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand(); // Растягиваем на весь экран
-        alert('Вход через Telegram: ID = ' + (tg.initDataUnsafe?.user?.id || 'не определён'));
-        // Здесь будет реальный код: валидация initData → поиск/создание пользователя в Supabase → редирект в dashboard
-      } else {
-        alert('Откройте приложение в Telegram для входа');
+    const supabaseUrl = 'https://твой-project-ref.supabase.co';      // ← замени
+    const supabaseKey = 'eyJ...твой-anon-key...';                    // ← замени
+    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    const status = document.getElementById('status');
+    const regForm = document.getElementById('reg-form');
+
+    async function init() {
+      if (!tg.initDataUnsafe?.user) {
+        status.textContent = 'Ошибка: откройте приложение в Telegram';
+        return;
       }
+
+      const userTg = tg.initDataUnsafe.user;
+      const telegramId = userTg.id;  // number (bigint)
+
+      status.textContent = `Привет, ${userTg.first_name || 'болельщик'}! Проверяем аккаунт...`;
+
+      // Ищем пользователя
+      const { data: existing, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('telegram_id', telegramId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // не "row not found"
+        status.textContent = 'Ошибка базы данных. Попробуйте позже.';
+        console.error(error);
+        return;
+      }
+
+      if (existing) {
+        // Уже есть — сразу в профиль
+        status.textContent = 'Добро пожаловать обратно!';
+        localStorage.setItem('userId', existing.id); // или JWT, но для MVP localStorage
+        setTimeout(() => { window.location.href = 'profile.html'; }, 1500);
+      } else {
+        // Новый пользователь — показываем форму
+        status.textContent = 'Первый вход — заполните профиль';
+        document.getElementById('full_name').value = [userTg.first_name, userTg.last_name].filter(Boolean).join(' ') || '';
+        regForm.style.display = 'flex';
+      }
+    }
+
+    regForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fullName = document.getElementById('full_name').value.trim();
+      const email = document.getElementById('email').value.trim() || null;
+
+      if (!fullName) {
+        alert('Укажите ФИО!');
+        return;
+      }
+
+      const tgUser = tg.initDataUnsafe.user;
+      const { data, error } = await supabase
+        .from('users')
+        .insert({
+          telegram_id: tgUser.id,
+          username: tgUser.username || null,
+          full_name: fullName,
+          email: email,
+          points: 0,
+          membership_status: 'New'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        alert('Ошибка сохранения: ' + error.message);
+        console.error(error);
+        return;
+      }
+
+      localStorage.setItem('userId', data.id);
+      status.textContent = 'Регистрация завершена! Переходим в профиль...';
+      setTimeout(() => { window.location.href = 'profile.html'; }, 1500);
     });
 
-    // Опционально: автоматический вход при загрузке, если уже в Mini App
-    window.addEventListener('load', () => {
-      if (window.Telegram?.WebApp) {
-        // Можно сразу пытаться войти без кнопки
-        // document.getElementById('login-btn').click();
-      }
-    });
+    init();
   </script>
 
 </body>
