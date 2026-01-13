@@ -55,7 +55,7 @@
       border-radius: 50px;
       font-size: 1.3rem;
       font-weight: bold;
-      margin-top: 2rem;
+      margin-top: 1rem;
       cursor: pointer;
     }
     button:hover { background: #E8B923; }
@@ -63,6 +63,19 @@
       text-align: center;
       margin: 1rem 0;
       color: #9ad;
+    }
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 2rem;
+    }
+    .secondary-btn {
+      background: #034694;
+      color: white;
+    }
+    .secondary-btn:hover {
+      background: #002366;
     }
   </style>
 </head>
@@ -100,6 +113,10 @@
 
   <button type="submit">Сохранить изменения</button>
 </form>
+
+<div class="button-group">
+  <button class="secondary-btn" id="dashboard-btn">Перейти в Dashboard →</button>
+</div>
 
 <script>
   // === Telegram ===
@@ -178,6 +195,12 @@
       } else {
         alert('Профиль обновлён');
       }
+    });
+
+  // Кнопка перехода в Dashboard
+  document.getElementById('dashboard-btn')
+    .addEventListener('click', () => {
+      location.href = 'dashboard.html';
     });
 
   loadProfile();
