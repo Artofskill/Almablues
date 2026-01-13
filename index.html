@@ -4,13 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chelsea FC Supporters Club Kazakhstan</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Supabase CDN (последняя версия на 2026) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
+
   <style>
     :root {
       --bg-dark: #001028;
@@ -21,7 +22,13 @@
       --text-light: #e0e0e0;
       --white: #ffffff;
     }
-    * { margin:0; padding:0; box-sizing:border-box; }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
       font-family: 'Roboto', sans-serif;
       background: var(--bg-dark);
@@ -29,8 +36,8 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow-x: hidden;
     }
+
     main {
       flex: 1;
       display: flex;
@@ -38,210 +45,171 @@
       justify-content: center;
       padding: 40px 20px;
     }
-    .hero {
-      text-align: center;
-      max-width: 1100px;
-      width: 100%;
-      position: relative;
-    }
-    .hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 50% 30%, rgba(3, 70, 148, 0.18) 0%, transparent 60%);
-      pointer-events: none;
-    }
+
     h1 {
       font-family: 'Oswald', sans-serif;
       font-size: clamp(3.8rem, 10vw, 8.5rem);
       font-weight: 700;
-      line-height: 0.95;
-      letter-spacing: 4px;
       text-transform: uppercase;
       color: var(--white);
-      text-shadow: 0 6px 20px rgba(0,0,0,0.8);
       margin-bottom: 0.2em;
     }
+
     .location {
       font-family: 'Oswald', sans-serif;
       font-size: clamp(1.8rem, 5vw, 3.2rem);
-      font-weight: 500;
       color: var(--gold);
-      letter-spacing: 2px;
-      margin-bottom: 3rem;
+      margin-bottom: 2rem;
     }
-    .buttons {
+
+    #status {
+      margin-bottom: 1.5rem;
+      font-size: 1.1rem;
+    }
+
+    form {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 2.5rem;
+      flex-direction: column;
+      gap: 1rem;
+      max-width: 360px;
+      margin: 0 auto;
     }
-    .btn {
-      position: relative;
-      padding: 1.1rem 3.2rem;
-      font-family: 'Oswald', sans-serif;
-      font-size: clamp(1.3rem, 4vw, 1.8rem);
-      font-weight: 600;
-      text-decoration: none;
-      border-radius: 50px;
-      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      overflow: hidden;
-      z-index: 1;
-      min-width: 240px;
-      text-align: center;
-      letter-spacing: 1px;
+
+    input, button {
+      padding: 0.9rem 1rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: none;
     }
-    .btn::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
-      opacity: 0;
-      transition: opacity 0.4s;
-      z-index: -1;
+
+    input {
+      outline: none;
     }
-    .btn-primary {
+
+    button {
       background: var(--gold);
       color: var(--chelsea-blue-dark);
-      box-shadow: 0 8px 25px rgba(212, 160, 23, 0.45);
+      font-weight: 600;
+      cursor: pointer;
     }
-    .btn-primary:hover {
+
+    button:hover {
       background: var(--gold-hover);
-      transform: scale(1.08) translateY(-6px);
-      box-shadow: 0 14px 40px rgba(232, 185, 35, 0.6);
     }
-    .btn-primary::before {
-      background: linear-gradient(135deg, rgba(255,255,255,0.25), transparent);
-    }
-    .btn-secondary {
-      background: transparent;
-      color: var(--white);
-      border: 3px solid var(--white);
-      box-shadow: 0 0 0 4px rgba(255,255,255,0.08);
-    }
-    .btn-secondary:hover {
-      background: rgba(255,255,255,0.08);
-      transform: scale(1.08) translateY(-6px);
-      box-shadow: 0 14px 40px rgba(255,255,255,0.2);
-    }
-    .btn:hover::before { opacity: 1; }
+
     footer {
-      padding: 2rem 1rem;
+      padding: 1.5rem;
       text-align: center;
+      font-size: 0.9rem;
       color: #777;
-      font-size: 0.95rem;
-      background: rgba(0,0,0,0.3);
-    }
-    @media (max-width: 640px) {
-      .buttons { flex-direction: column; gap: 1.8rem; }
-      .btn { padding: 1rem 2.5rem; font-size: 1.4rem; }
     }
   </style>
 </head>
+
 <body>
 
-  <main>
-    <div>
-      <h1>CHELSEA FC</h1>
-      <div class="location">KAZAKHSTAN</div>
-      <div id="status">Загрузка... Пожалуйста, подождите</div>
-      
-      <form id="reg-form">
-        <input type="text" id="full_name" placeholder="Ваше ФИО (обязательно)" required>
-        <input type="email" id="email" placeholder="Email (опционально)">
-        <button type="submit">Зарегистрироваться и продолжить</button>
-      </form>
-    </div>
-  </main>
+<main>
+  <div style="text-align:center;">
+    <h1>CHELSEA FC</h1>
+    <div class="location">KAZAKHSTAN</div>
 
-  <footer>COYB! • Chelsea FC Supporters Club Kazakhstan • 2026</footer>
+    <div id="status">Загрузка...</div>
 
-  <script>
-    const supabaseUrl = 'https://zuapiixwzkleygaijulx.supabase.co';      // ← замени
-    const supabaseKey = API Key-  'sb_publishable_Jsth-2GViNz5Ev3UWtrWTg_fbg4GAKx';                    // ← замени
-    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+    <form id="reg-form">
+      <input type="text" id="full_name" placeholder="Ваше ФИО (обязательно)" required>
+      <input type="email" id="email" placeholder="Email (опционально)">
+      <button type="submit">Зарегистрироваться</button>
+    </form>
+  </div>
+</main>
 
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
+<footer>
+  COYB! • Chelsea FC Supporters Club Kazakhstan • 2026
+</footer>
 
-    const status = document.getElementById('status');
-    const regForm = document.getElementById('reg-form');
+<script>
+  // === Supabase ===
+  const supabaseUrl = 'https://zuapiixwzkleygaijulx.supabase.co';
+  const supabaseKey = 'sb-publishable_Jsth-2GViNz5Ev3UWtrWTg_fbg4GAKx';
 
-    async function init() {
-      if (!tg.initDataUnsafe?.user) {
-        status.textContent = 'Ошибка: откройте приложение в Telegram';
-        return;
-      }
+  const supabaseClient = supabase.createClient(
+    supabaseUrl,
+    supabaseKey
+  );
 
-      const userTg = tg.initDataUnsafe.user;
-      const telegramId = userTg.id;  // number (bigint)
+  // === Telegram ===
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
 
-      status.textContent = `Привет, ${userTg.first_name || 'болельщик'}! Проверяем аккаунт...`;
+  const status = document.getElementById('status');
+  const regForm = document.getElementById('reg-form');
+  regForm.style.display = 'none';
 
-      // Ищем пользователя
-      const { data: existing, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('telegram_id', telegramId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') { // не "row not found"
-        status.textContent = 'Ошибка базы данных. Попробуйте позже.';
-        console.error(error);
-        return;
-      }
-
-      if (existing) {
-        // Уже есть — сразу в профиль
-        status.textContent = 'Добро пожаловать обратно!';
-        localStorage.setItem('userId', existing.id); // или JWT, но для MVP localStorage
-        setTimeout(() => { window.location.href = 'profile.html'; }, 1500);
-      } else {
-        // Новый пользователь — показываем форму
-        status.textContent = 'Первый вход — заполните профиль';
-        document.getElementById('full_name').value = [userTg.first_name, userTg.last_name].filter(Boolean).join(' ') || '';
-        regForm.style.display = 'flex';
-      }
+  async function init() {
+    if (!tg.initDataUnsafe?.user) {
+      status.textContent = 'Откройте приложение через Telegram';
+      return;
     }
 
-    regForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const fullName = document.getElementById('full_name').value.trim();
-      const email = document.getElementById('email').value.trim() || null;
+    const user = tg.initDataUnsafe.user;
+    status.textContent = `Привет, ${user.first_name}! Проверяем аккаунт...`;
 
-      if (!fullName) {
-        alert('Укажите ФИО!');
-        return;
-      }
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('telegram_id', user.id)
+      .maybeSingle();
 
-      const tgUser = tg.initDataUnsafe.user;
-      const { data, error } = await supabase
-        .from('users')
-        .insert({
-          telegram_id: tgUser.id,
-          username: tgUser.username || null,
-          full_name: fullName,
-          email: email,
-          points: 0,
-          membership_status: 'New'
-        })
-        .select()
-        .single();
+    if (error) {
+      console.error(error);
+      status.textContent = 'Ошибка подключения к базе';
+      return;
+    }
 
-      if (error) {
-        alert('Ошибка сохранения: ' + error.message);
-        console.error(error);
-        return;
-      }
-
+    if (data) {
+      status.textContent = 'Добро пожаловать обратно!';
       localStorage.setItem('userId', data.id);
-      status.textContent = 'Регистрация завершена! Переходим в профиль...';
-      setTimeout(() => { window.location.href = 'profile.html'; }, 1500);
-    });
+      setTimeout(() => location.href = 'profile.html', 1200);
+    } else {
+      status.textContent = 'Первый вход — заполните профиль';
+      document.getElementById('full_name').value =
+        [user.first_name, user.last_name].filter(Boolean).join(' ');
+      regForm.style.display = 'flex';
+    }
+  }
 
-    init();
-  </script>
+  regForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const fullName = document.getElementById('full_name').value.trim();
+    const email = document.getElementById('email').value.trim() || null;
+
+    const { data, error } = await supabaseClient
+      .from('users')
+      .insert({
+        telegram_id: tg.initDataUnsafe.user.id,
+        username: tg.initDataUnsafe.user.username || null,
+        full_name: fullName,
+        email: email,
+        points: 0,
+        membership_status: 'New'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    localStorage.setItem('userId', data.id);
+    status.textContent = 'Регистрация завершена!';
+    setTimeout(() => location.href = 'profile.html', 1200);
+  });
+
+  init();
+</script>
 
 </body>
 </html>
