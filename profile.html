@@ -198,6 +198,12 @@ document.getElementById('profile-form')
       setTimeout(() => location.href = 'dashboard.html', 1000);
     }
   });
+    // Кнопка перехода в Dashboard
+  document.getElementById('dashboard-btn')
+    .addEventListener('click', () => {
+      location.href = 'dashboard.html';
+    });
+
 
   loadProfile();
 </script>
