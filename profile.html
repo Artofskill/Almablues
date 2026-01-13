@@ -4,95 +4,171 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Профиль — Chelsea FC KZ</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
-    body { font-family: 'Roboto', sans-serif; background: #001028; color: #e0e0e0; padding: 20px; max-width: 500px; margin: 0 auto; }
-    h1 { font-family: 'Oswald', sans-serif; color: #D4A017; text-align: center; margin-bottom: 1.5rem; }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: #001028;
+      color: #e0e0e0;
+      padding: 20px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-family: 'Oswald', sans-serif;
+      color: #D4A017;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
     .field { margin: 1.2rem 0; }
-    .field label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
-    input, .readonly { padding: 12px; width: 100%; border-radius: 8px; border: 1px solid #444; background: #112; color: white; font-size: 1.1rem; }
-    .readonly { background: #0a1a3a; pointer-events: none; }
-    button { width: 100%; padding: 16px; background: #D4A017; color: #001028; border: none; border-radius: 50px; font-size: 1.3rem; font-weight: bold; margin-top: 2rem; cursor: pointer; }
+    .field label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+    input, .readonly {
+      padding: 12px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #112;
+      color: white;
+      font-size: 1.1rem;
+    }
+    .readonly {
+      background: #0a1a3a;
+      pointer-events: none;
+    }
+    button {
+      width: 100%;
+      padding: 16px;
+      background: #D4A017;
+      color: #001028;
+      border: none;
+      border-radius: 50px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-top: 2rem;
+      cursor: pointer;
+    }
     button:hover { background: #E8B923; }
-    #status { text-align: center; margin: 1rem 0; color: #6a7; }
+    #status {
+      text-align: center;
+      margin: 1rem 0;
+      color: #9ad;
+    }
   </style>
 </head>
+
 <body>
 
-  <h1>Ваш профиль</h1>
-  <div id="status">Загрузка профиля...</div>
+<h1>Ваш профиль</h1>
+<div id="status">Загрузка профиля...</div>
 
-  <form id="profile-form">
-    <div class="field">
-      <label>Telegram username</label>
-      <div class="readonly" id="username"></div>
-    </div>
-    <div class="field">
-      <label>ФИО *</label>
-      <input type="text" id="full_name" required>
-    </div>
-    <div class="field">
-      <label>Email (опционально)</label>
-      <input type="email" id="email">
-    </div>
-    <div class="field">
-      <label>Очки лояльности</label>
-      <div class="readonly" id="points">0</div>
-    </div>
-    <div class="field">
-      <label>Статус членства</label>
-      <div class="readonly" id="membership_status">New</div>
-    </div>
-    <button type="submit">Сохранить изменения</button>
-  </form>
+<form id="profile-form">
+  <div class="field">
+    <label>Telegram username</label>
+    <div class="readonly" id="username"></div>
+  </div>
 
-  <script>
-    const supabaseUrl = https://zuapiixwzkleygaijulx.supabase.co;   // ← замени
-    const supabaseKey = sb_publishable_Jsth-2GViNz5Ev3UWtrWTg_fbg4GAKx;                 // ← замени
-    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+  <div class="field">
+    <label>ФИО *</label>
+    <input type="text" id="full_name" required>
+  </div>
 
-    const userId = localStorage.getItem('userId');
+  <div class="field">
+    <label>Email (опционально)</label>
+    <input type="email" id="email">
+  </div>
 
-    if (!userId) {
-      document.getElementById('status').textContent = 'Ошибка: вернитесь на главную страницу';
+  <div class="field">
+    <label>Очки лояльности</label>
+    <div class="readonly" id="points">0</div>
+  </div>
+
+  <div class="field">
+    <label>Статус членства</label>
+    <div class="readonly" id="membership_status">New</div>
+  </div>
+
+  <button type="submit">Сохранить изменения</button>
+</form>
+
+<script>
+  // === Telegram ===
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+
+  if (!tg.initDataUnsafe?.user) {
+    document.getElementById('status').textContent =
+      'Откройте страницу через Telegram';
+    throw new Error('Not Telegram WebApp');
+  }
+
+  // === Supabase ===
+  const supabaseUrl = 'https://zuapiixwzkleygaijulx.supabase.co';
+  const supabaseKey = 'sb-publishable_Jsth-2GViNz5Ev3UWtrWTg_fbg4GAKx';
+
+  const supabaseClient = supabase.createClient(
+    supabaseUrl,
+    supabaseKey
+  );
+
+  const userId = localStorage.getItem('userId');
+
+  if (!userId) {
+    document.getElementById('status').textContent =
+      'Сессия истекла. Вернитесь на главную страницу.';
+    throw new Error('No userId');
+  }
+
+  async function loadProfile() {
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data) {
+      document.getElementById('status').textContent =
+        'Профиль не найден. Войдите заново.';
       return;
     }
 
-    async function loadProfile() {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
+    document.getElementById('username').textContent =
+      data.username || 'не указан';
+    document.getElementById('full_name').value = data.full_name || '';
+    document.getElementById('email').value = data.email || '';
+    document.getElementById('points').textContent = data.points ?? 0;
+    document.getElementById('membership_status').textContent =
+      data.membership_status || 'New';
 
-      if (error || !data) {
-        document.getElementById('status').textContent = 'Профиль не найден. Попробуйте войти заново.';
-        return;
-      }
+    document.getElementById('status').style.display = 'none';
+  }
 
-      document.getElementById('username').textContent = data.username || 'не указан';
-      document.getElementById('full_name').value = data.full_name || '';
-      document.getElementById('email').value = data.email || '';
-      document.getElementById('points').textContent = data.points || 0;
-      document.getElementById('membership_status').textContent = data.membership_status || 'New';
-      document.getElementById('status').style.display = 'none';
-    }
-
-    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+  document.getElementById('profile-form')
+    .addEventListener('submit', async (e) => {
       e.preventDefault();
-      const fullName = document.getElementById('full_name').value.trim();
-      const email = document.getElementById('email').value.trim() || null;
+
+      const fullName =
+        document.getElementById('full_name').value.trim();
+      const email =
+        document.getElementById('email').value.trim() || null;
 
       if (!fullName) {
-        alert('Укажите ФИО!');
+        alert('Укажите ФИО');
         return;
       }
 
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('users')
         .update({ full_name: fullName, email })
         .eq('id', userId);
@@ -100,12 +176,12 @@
       if (error) {
         alert('Ошибка сохранения: ' + error.message);
       } else {
-        alert('Профиль обновлён!');
+        alert('Профиль обновлён');
       }
     });
 
-    loadProfile();
-  </script>
+  loadProfile();
+</script>
 
 </body>
 </html>
