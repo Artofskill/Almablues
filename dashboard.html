@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — Chelsea FC KZ</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg-dark: #001028;
+      --chelsea-blue: #034694;
+      --chelsea-blue-dark: #002366;
+      --gold: #D4A017;
+      --gold-hover: #E8B923;
+      --text-light: #e0e0e0;
+      --white: #ffffff;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-light);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-family: 'Oswald', sans-serif;
+      color: var(--gold);
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .user-info {
+      background: rgba(3, 70, 148, 0.2);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .user-name {
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+    .user-points {
+      background: var(--gold);
+      color: var(--bg-dark);
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-weight: bold;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+      margin-bottom: 2rem;
+    }
+
+    .section-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.5rem;
+      color: var(--gold);
+      margin-bottom: 1rem;
+      padding-bottom: 5px;
+      border-bottom: 2px solid var(--chelsea-blue);
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 20px;
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .card-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.2rem;
+      color: var(--white);
+      margin-bottom: 10px;
+    }
+
+    .card-description {
+      color: #aaa;
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: var(--chelsea-blue);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background: var(--chelsea-blue-dark);
+    }
+
+    .btn-gold {
+      background: var(--gold);
+      color: var(--bg-dark);
+    }
+
+    .btn-gold:hover {
+      background: var(--gold-hover);
+    }
+
+    .btn-small {
+      padding: 8px 16px;
+      font-size: 0.9rem;
+    }
+
+    .events-list {
+      margin-top: 10px;
+    }
+
+    .event-item {
+      background: rgba(3, 70, 148, 0.1);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .event-info h4 {
+      color: var(--white);
+      margin-bottom: 5px;
+    }
+
+    .event-date {
+      color: var(--gold);
+      font-size: 0.9rem;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: #777;
+      font-size: 0.9rem;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-top: 1rem;
+      color: var(--gold);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .back-btn:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <header>
+    <h1>Chelsea FC KZ</h1>
+    <p>Фан-клуб в Казахстане</p>
+  </header>
+
+  <div class="user-info">
+    <div>
+      <div class="user-name" id="user-name">Загрузка...</div>
+      <div id="user-status" style="font-size: 0.9rem; color: #aaa;">Статус: New</div>
+    </div>
+    <div class="user-points">
+      <span id="user-points">0</span> очков
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    
+    <!-- Заявка на членство -->
+    <div class="card">
+      <h3 class="card-title">👥 Заявка на членство</h3>
+      <p class="card-description">Подайте заявку на официальное членство в фан-клубе</p>
+      <button class="btn btn-gold" id="membership-btn">Подать заявку</button>
+    </div>
+
+    <!-- Рейтинги -->
+    <div class="card">
+      <h3 class="card-title">🏆 Рейтинги</h3>
+      <p class="card-description">Топ активных участников фан-клуба</p>
+      <button class="btn" id="ratings-btn">Посмотреть рейтинг</button>
+    </div>
+
+    <!-- Мероприятия -->
+    <div class="card">
+      <h3 class="card-title">📅 Ближайшие мероприятия</h3>
+      <p class="card-description">Последние матчи и встречи фанатов</p>
+      
+      <div class="events-list">
+        <div class="event-item">
+          <div class="event-info">
+            <h4>Chelsea vs Man City</h4>
+            <div class="event-date">15 марта 2025 • 20:00</div>
+          </div>
+          <button class="btn btn-small" onclick="registerEvent(1)">Записаться</button>
+        </div>
+        
+        <div class="event-item">
+          <div class="event-info">
+            <h4>Встреча фанатов</h4>
+            <div class="event-date">22 марта 2025 • 18:00</div>
+          </div>
+          <button class="btn btn-small" onclick="registerEvent(2)">Записаться</button>
+        </div>
+      </div>
+      
+      <button class="btn" id="all-events-btn" style="margin-top: 15px;">Все мероприятия</button>
+    </div>
+
+    <!-- Мои записи -->
+    <div class="card">
+      <h3 class="card-title">🎫 Мои записи</h3>
+      <p class="card-description">Управление вашими регистрациями на мероприятия</p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+        <button class="btn btn-small" id="my-registrations-btn">Мои записи</button>
+        <button class="btn btn-small" id="edit-registration-btn">Изменить запись</button>
+      </div>
+    </div>
+
+    <!-- Участники -->
+    <div class="card">
+      <h3 class="card-title">👥 Участники</h3>
+      <p class="card-description">Список зарегистрированных на мероприятия</p>
+      <button class="btn" id="participants-btn">Показать записавшихся</button>
+    </div>
+
+    <!-- QR код -->
+    <div class="card">
+      <h3 class="card-title">📱 QR код</h3>
+      <p class="card-description">Ваш персональный QR для проверки на мероприятиях</p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+        <button class="btn btn-small" id="show-qr-btn">Показать мой QR</button>
+        <button class="btn btn-small" id="scan-qr-btn">Сканировать QR</button>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>Chelsea FC Supporters Club Kazakhstan • 2025</p>
+    <a href="profile.html" class="back-btn">← Вернуться в профиль</a>
+  </footer>
+</div>
+
+<script>
+  // === Telegram ===
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+
+  // === Supabase ===
+  const supabaseUrl = 'https://zuapiixwzkleygaijulx.supabase.co';
+  const supabaseKey = 'sb_publishable_Jsth-2GViNz5Ev3UWtrWTg_fbg4GAKx';
+
+  const supabaseClient = supabase.createClient(
+    supabaseUrl,
+    supabaseKey
+  );
+
+  const userId = localStorage.getItem('userId');
+
+  if (!userId) {
+    alert('Сессия истекла. Пожалуйста, вернитесь на главную страницу.');
+    location.href = 'index.html';
+  }
+
+  // Загружаем данные пользователя
+  async function loadUserData() {
+    try {
+      const { data, error } = await supabaseClient
+        .from('users')
+        .select('full_name, points, membership_status')
+        .eq('id', userId)
+        .single();
+
+      if (error || !data) {
+        console.error('Error loading user:', error);
+        return;
+      }
+
+      document.getElementById('user-name').textContent = data.full_name || 'Пользователь';
+      document.getElementById('user-points').textContent = data.points || 0;
+      document.getElementById('user-status').textContent = `Статус: ${data.membership_status || 'New'}`;
+    } catch (err) {
+      console.error('Unexpected error:', err);
+    }
+  }
+
+  // Обработчики кнопок (заглушки)
+  function setupButtonHandlers() {
+    // Заявка на членство
+    document.getElementById('membership-btn').addEventListener('click', () => {
+      alert('Функция "Заявка на членство" в разработке');
+    });
+
+    // Рейтинги
+    document.getElementById('ratings-btn').addEventListener('click', () => {
+      alert('Функция "Рейтинги" в разработке');
+    });
+
+    // Все мероприятия
+    document.getElementById('all-events-btn').addEventListener('click', () => {
+      alert('Функция "Все мероприятия" в разработке');
+    });
+
+    // Мои записи
+    document.getElementById('my-registrations-btn').addEventListener('click', () => {
+      alert('Функция "Мои записи" в разработке');
+    });
+
+    // Изменить запись
+    document.getElementById('edit-registration-btn').addEventListener('click', () => {
+      alert('Функция "Изменить запись" в разработке');
+    });
+
+    // Участники
+    document.getElementById('participants-btn').addEventListener('click', () => {
+      alert('Функция "Показать записавшихся" в разработке');
+    });
+
+    // Показать QR
+    document.getElementById('show-qr-btn').addEventListener('click', () => {
+      alert('Функция "Показать мой QR" в разработке');
+    });
+
+    // Сканировать QR
+    document.getElementById('scan-qr-btn').addEventListener('click', () => {
+      alert('Функция "Сканировать QR" в разработке');
+    });
+  }
+
+  // Запись на мероприятие
+  function registerEvent(eventId) {
+    alert(`Вы записаны на мероприятие #${eventId}. Функция записи в разработке.`);
+  }
+
+  // Инициализация
+  loadUserData();
+  setupButtonHandlers();
+</script>
+</body>
+</html>
