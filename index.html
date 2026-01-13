@@ -168,10 +168,23 @@
     }
 
     if (data) {
-      status.textContent = 'Добро пожаловать обратно!';
-      localStorage.setItem('userId', data.id);
-      setTimeout(() => location.href = 'profile.html', 1200);
+      // Проверяем, заполнено ли поле full_name
+      if (data.full_name && data.full_name.trim() !== '') {
+        // Пользователь уже заполнил ФИО - идем в dashboard
+        status.textContent = 'Добро пожаловать обратно!';
+        localStorage.setItem('userId', data.id);
+        localStorage.setItem('userFullName', data.full_name);
+        setTimeout(() => location.href = 'dashboard.html', 1200);
+      } else {
+        // Пользователь есть в системе, но ФИО не заполнено - идем в profile
+        status.textContent = 'Пожалуйста, заполните профиль';
+        document.getElementById('full_name').value = 
+          [user.first_name, user.last_name].filter(Boolean).join(' ');
+        regForm.style.display = 'flex';
+        localStorage.setItem('userId', data.id);
+      }
     } else {
+      // Пользователя нет в системе - регистрация
       status.textContent = 'Первый вход — заполните профиль';
       document.getElementById('full_name').value =
         [user.first_name, user.last_name].filter(Boolean).join(' ');
@@ -185,27 +198,60 @@
     const fullName = document.getElementById('full_name').value.trim();
     const email = document.getElementById('email').value.trim() || null;
 
-    const { data, error } = await supabaseClient
-      .from('users')
-      .insert({
-        telegram_id: tg.initDataUnsafe.user.id,
-        username: tg.initDataUnsafe.user.username || null,
-        full_name: fullName,
-        email: email,
-        points: 0,
-        membership_status: 'New'
-      })
-      .select()
-      .single();
-
-    if (error) {
-      alert(error.message);
+    if (!fullName) {
+      alert('Пожалуйста, укажите ФИО');
       return;
     }
 
-    localStorage.setItem('userId', data.id);
+    const userData = {
+      telegram_id: tg.initDataUnsafe.user.id,
+      username: tg.initDataUnsafe.user.username || null,
+      full_name: fullName,
+      email: email,
+      points: 0,
+      membership_status: 'New'
+    };
+
+    // Проверяем, есть ли уже пользователь в системе
+    const { data: existingUser } = await supabaseClient
+      .from('users')
+      .select('id')
+      .eq('telegram_id', tg.initDataUnsafe.user.id)
+      .maybeSingle();
+
+    let result;
+    if (existingUser) {
+      // Обновляем существующего пользователя
+      const { data, error } = await supabaseClient
+        .from('users')
+        .update(userData)
+        .eq('id', existingUser.id)
+        .select()
+        .single();
+      
+      result = { data, error };
+    } else {
+      // Создаем нового пользователя
+      const { data, error } = await supabaseClient
+        .from('users')
+        .insert(userData)
+        .select()
+        .single();
+      
+      result = { data, error };
+    }
+
+    if (result.error) {
+      alert(result.error.message);
+      return;
+    }
+
+    localStorage.setItem('userId', result.data.id);
+    localStorage.setItem('userFullName', result.data.full_name);
     status.textContent = 'Регистрация завершена!';
-    setTimeout(() => location.href = 'profile.html', 1200);
+    
+    // После регистрации сразу идем в dashboard
+    setTimeout(() => location.href = 'dashboard.html', 1200);
   });
 
   init();
