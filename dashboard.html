@@ -361,21 +361,25 @@
   async function updateMembershipStatus() {
     const { data, error } = await supabaseClient
       .from('users')
-      .select('membership_status')
+      .select('membership_status, points')
       .eq('id', userId)
       .single();
 
     if (!error && data) {
       const statusElement = document.getElementById('user-status');
-      const membershipCard = document.getElementById('membership-card');
+      const pointsElement = document.getElementById('user-points');
       const membershipBtn = document.getElementById('membership-btn');
       const cancelBtn = document.getElementById('cancel-membership-btn');
       const statusInfo = document.getElementById('membership-status-info');
       
       const status = data.membership_status || 'New';
+      const points = data.points || 0;
       
       // Обновляем статус вверху
       statusElement.textContent = `Статус: ${getStatusText(status)}`;
+      
+      // Обновляем очки
+      pointsElement.textContent = points;
       
       // Управляем кнопками в карточке
       switch(status) {
