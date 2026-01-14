@@ -22,7 +22,7 @@
       color: #D4A017;
       text-align: center;
     }
-    .container { max-width: 900px; margin: 0 auto; }
+    .container { max-width: 1200px; margin: 0 auto; }
     .login-form, .admin-content { max-width: 500px; margin: 40px auto; }
     input, textarea, button, select {
       width: 100%;
@@ -49,8 +49,8 @@
       border-radius: 12px; 
       border: 1px solid rgba(3,70,148,0.3);
     }
-    .event-list, .pending-list { margin-top: 20px; }
-    .event-item, .pending-item { 
+    .event-list, .pending-list, .registrations-list { margin-top: 20px; }
+    .event-item, .pending-item, .registration-item { 
       background: #0a1a3a; 
       padding: 15px; 
       margin: 12px 0; 
@@ -81,10 +81,12 @@
       display: flex;
       gap: 10px;
       margin-top: 15px;
+      flex-wrap: wrap;
     }
     .action-buttons button {
       flex: 1;
       padding: 10px;
+      min-width: 120px;
     }
     .btn-approve {
       background: #4CAF50;
@@ -92,6 +94,18 @@
     }
     .btn-reject {
       background: #f44336;
+      color: white;
+    }
+    .btn-checkin {
+      background: #2196F3;
+      color: white;
+    }
+    .btn-cancel {
+      background: #FF9800;
+      color: white;
+    }
+    .btn-delete {
+      background: #9C27B0;
       color: white;
     }
     .stats {
@@ -114,6 +128,62 @@
     .stat-label {
       font-size: 0.9rem;
       color: #aaa;
+    }
+    .registration-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .status-registered {
+      background: rgba(33, 150, 243, 0.2);
+      color: #2196F3;
+      border: 1px solid #2196F3;
+    }
+    .status-cancelled {
+      background: rgba(244, 67, 54, 0.2);
+      color: #F44336;
+      border: 1px solid #F44336;
+    }
+    .status-checked_in {
+      background: rgba(76, 175, 80, 0.2);
+      color: #4CAF50;
+      border: 1px solid #4CAF50;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 768px) {
+      .filters {
+        grid-template-columns: 1fr;
+      }
+      .container {
+        max-width: 100%;
+        padding: 10px;
+      }
+    }
+    .qr-scanner-section {
+      text-align: center;
+      padding: 20px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+    #qr-video {
+      width: 100%;
+      max-width: 300px;
+      border-radius: 8px;
+      margin: 15px 0;
     }
   </style>
 </head>
@@ -140,16 +210,20 @@
           <div class="stat-label">Пользователей</div>
         </div>
         <div class="stat-card">
-          <div class="stat-number" id="pending-applications">0</div>
-          <div class="stat-label">Заявок на рассмотрении</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="approved-members">0</div>
-          <div class="stat-label">Подтвержденных членов</div>
-        </div>
-        <div class="stat-card">
           <div class="stat-number" id="total-events">0</div>
           <div class="stat-label">Мероприятий</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="total-registrations">0</div>
+          <div class="stat-label">Всего записей</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="active-registrations">0</div>
+          <div class="stat-label">Активных записей</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="checked-in-count">0</div>
+          <div class="stat-label">Отметившихся</div>
         </div>
       </div>
 
@@ -165,6 +239,36 @@
           <input type="checkbox" id="is_open" checked> Открыта запись
         </label>
         <button id="create-event-button">Создать мероприятие</button>
+      </div>
+
+      <!-- Управление записями на мероприятия -->
+      <div class="section">
+        <h2>🎫 Управление записями на мероприятия</h2>
+        
+        <div class="filters">
+          <input type="text" id="search-registration" placeholder="Поиск по имени или мероприятию">
+          <select id="filter-event">
+            <option value="">Все мероприятия</option>
+          </select>
+          <select id="filter-status">
+            <option value="">Все статусы</option>
+            <option value="registered">Записан</option>
+            <option value="cancelled">Отменен</option>
+            <option value="checked_in">Отметилcя</option>
+          </select>
+        </div>
+        
+        <div id="registrations-list" class="registrations-list">Загрузка...</div>
+        <button id="refresh-registrations" class="btn">🔄 Обновить список записей</button>
+        
+        <!-- QR сканер -->
+        <div class="qr-scanner-section">
+          <h3>📱 QR код сканер</h3>
+          <video id="qr-video" style="display: none;"></video>
+          <button id="start-scanner" class="btn">Запустить сканер QR</button>
+          <button id="stop-scanner" class="btn" style="background: #f44336; display: none;">Остановить сканер</button>
+          <div id="scanner-result" style="margin-top: 15px;"></div>
+        </div>
       </div>
 
       <!-- Заявки на Membership -->
@@ -191,23 +295,23 @@
         <button id="refresh-events" class="btn">🔄 Обновить календарь</button>
       </div>
 
-<!-- Управление пользователем -->
-<div class="section">
-  <h2>⚙️ Управление пользователем</h2>
-  <input type="text" id="user-id-input" placeholder="Telegram ID пользователя">
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-    <input type="number" id="add-points" placeholder="Добавить очки">
-    <input type="number" id="remove-points" placeholder="Убрать очки">
-  </div>
-  <select id="user-status-select">
-    <option value="">Выберите статус</option>
-    <option value="New">New - Новый</option>
-    <option value="pending">pending - На рассмотрении</option>
-    <option value="approved">approved - Подтвержден</option>
-    <option value="rejected">rejected - Отклонен</option>
-  </select>
-  <button id="update-user-btn" class="btn">Обновить пользователя</button>
-</div>
+      <!-- Управление пользователем -->
+      <div class="section">
+        <h2>⚙️ Управление пользователем</h2>
+        <input type="text" id="user-id-input" placeholder="Telegram ID пользователя">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <input type="number" id="add-points" placeholder="Добавить очки">
+          <input type="number" id="remove-points" placeholder="Убрать очки">
+        </div>
+        <select id="user-status-select">
+          <option value="">Выберите статус</option>
+          <option value="New">New - Новый</option>
+          <option value="pending">pending - На рассмотрении</option>
+          <option value="approved">approved - Подтвержден</option>
+          <option value="rejected">rejected - Отклонен</option>
+        </select>
+        <button id="update-user-btn" class="btn">Обновить пользователя</button>
+      </div>
 
       <button id="logout-button" style="background:#c00; margin-top:40px; width:100%;">Выйти из админ-панели</button>
     </div>
@@ -256,6 +360,8 @@
         loadEvents();
         loadPending();
         loadAllUsers();
+        loadRegistrations();
+        loadEventsForFilter();
       } else {
         showMsg('login-status', 'Неверный логин или пароль', true);
       }
@@ -276,27 +382,33 @@
           .from('users')
           .select('*', { count: 'exact', head: true });
         
-        // Заявки на рассмотрении
-        const { count: pendingApps } = await supabaseClient
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .eq('membership_status', 'pending');
-        
-        // Подтвержденные члены
-        const { count: approvedMembers } = await supabaseClient
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .eq('membership_status', 'approved');
-        
         // Общее количество мероприятий
         const { count: totalEvents } = await supabaseClient
           .from('events')
           .select('*', { count: 'exact', head: true });
         
+        // Общее количество записей
+        const { count: totalRegistrations } = await supabaseClient
+          .from('registrations')
+          .select('*', { count: 'exact', head: true });
+        
+        // Активные записи (записанные на будущие мероприятия)
+        const { count: activeRegistrations } = await supabaseClient
+          .from('registrations')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'registered');
+        
+        // Отметившиеся
+        const { count: checkedInCount } = await supabaseClient
+          .from('registrations')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'checked_in');
+        
         document.getElementById('total-users').textContent = totalUsers || 0;
-        document.getElementById('pending-applications').textContent = pendingApps || 0;
-        document.getElementById('approved-members').textContent = approvedMembers || 0;
         document.getElementById('total-events').textContent = totalEvents || 0;
+        document.getElementById('total-registrations').textContent = totalRegistrations || 0;
+        document.getElementById('active-registrations').textContent = activeRegistrations || 0;
+        document.getElementById('checked-in-count').textContent = checkedInCount || 0;
         
       } catch (error) {
         console.error('Error loading stats:', error);
@@ -304,7 +416,401 @@
     }
 
     // =============================================
-    //   СОЗДАНИЕ МЕРОПРИЯТИЯ
+    //   ЗАГРУЗКА МЕРОПРИЯТИЙ ДЛЯ ФИЛЬТРА
+    // =============================================
+    async function loadEventsForFilter() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('events')
+          .select('id, match_name, match_date')
+          .order('match_date', { ascending: false });
+
+        if (error) return;
+
+        const filterSelect = document.getElementById('filter-event');
+        filterSelect.innerHTML = '<option value="">Все мероприятия</option>';
+        
+        data.forEach(event => {
+          const eventDate = new Date(event.match_date);
+          const option = document.createElement('option');
+          option.value = event.id;
+          option.textContent = `${event.match_name} (${eventDate.toLocaleDateString('ru-RU')})`;
+          filterSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error loading events for filter:', error);
+      }
+    }
+
+    // =============================================
+    //   УПРАВЛЕНИЕ ЗАПИСЯМИ НА МЕРОПРИЯТИЯ
+    // =============================================
+    async function loadRegistrations() {
+      try {
+        let query = supabaseClient
+          .from('registrations')
+          .select(`
+            id,
+            status,
+            checkin_time,
+            created_at,
+            users (
+              id,
+              full_name,
+              username,
+              telegram_id
+            ),
+            events (
+              id,
+              match_name,
+              match_date,
+              bar_address
+            )
+          `)
+          .order('created_at', { ascending: false });
+
+        // Применяем фильтры
+        const searchTerm = document.getElementById('search-registration').value.toLowerCase();
+        const eventFilter = document.getElementById('filter-event').value;
+        const statusFilter = document.getElementById('filter-status').value;
+
+        if (eventFilter) {
+          query = query.eq('event_id', eventFilter);
+        }
+
+        if (statusFilter) {
+          query = query.eq('status', statusFilter);
+        }
+
+        const { data, error } = await query;
+
+        const container = document.getElementById('registrations-list');
+        
+        if (error) {
+          container.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки записей</p>';
+          return;
+        }
+        
+        if (!data?.length) {
+          container.innerHTML = '<p>Записей не найдено</p>';
+          return;
+        }
+
+        // Фильтрация по поисковому запросу (если есть)
+        let filteredData = data;
+        if (searchTerm) {
+          filteredData = data.filter(reg => 
+            reg.users?.full_name?.toLowerCase().includes(searchTerm) ||
+            reg.users?.username?.toLowerCase().includes(searchTerm) ||
+            reg.events?.match_name?.toLowerCase().includes(searchTerm)
+          );
+        }
+
+        if (!filteredData.length) {
+          container.innerHTML = '<p>По вашему запросу записей не найдено</p>';
+          return;
+        }
+
+        renderRegistrations(filteredData);
+        
+      } catch (error) {
+        console.error('Error loading registrations:', error);
+        document.getElementById('registrations-list').innerHTML = '<p style="color: #ff6666;">Ошибка загрузки записей</p>';
+      }
+    }
+
+    function renderRegistrations(registrations) {
+      const container = document.getElementById('registrations-list');
+      container.innerHTML = '';
+      
+      registrations.forEach(reg => {
+        const user = reg.users;
+        const event = reg.events;
+        
+        if (!user || !event) return;
+        
+        const eventDate = new Date(event.match_date);
+        const formattedDate = eventDate.toLocaleDateString('ru-RU', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        const statusText = reg.status === 'registered' ? 'Записан' : 
+                          reg.status === 'cancelled' ? 'Отменен' : 
+                          reg.status === 'checked_in' ? 'Отметилcя' : reg.status;
+        
+        const statusClass = reg.status === 'registered' ? 'status-registered' :
+                           reg.status === 'cancelled' ? 'status-cancelled' :
+                           'status-checked_in';
+        
+        const now = new Date();
+        const isEventPast = eventDate < now;
+        
+        const registrationItem = document.createElement('div');
+        registrationItem.className = 'registration-item';
+        
+        registrationItem.innerHTML = `
+          <div class="registration-details">
+            <div>
+              <strong>👤 ${user.full_name || 'Аноним'}</strong><br>
+              <small>Telegram: @${user.username || 'нет'} (ID: ${user.telegram_id})</small><br>
+              <small>ID пользователя: ${user.id}</small>
+            </div>
+            <div>
+              <strong>🎫 ${event.match_name}</strong><br>
+              <small>📅 ${formattedDate}</small><br>
+              <small>📍 ${event.bar_address}</small>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 10px;">
+            <span class="status-badge ${statusClass}">${statusText}</span>
+            <small style="color: #aaa; margin-left: 10px;">
+              Запись создана: ${new Date(reg.created_at).toLocaleDateString('ru-RU')}
+              ${reg.checkin_time ? `• Отметка: ${new Date(reg.checkin_time).toLocaleString('ru-RU')}` : ''}
+            </small>
+          </div>
+          
+          <div class="action-buttons">
+            ${reg.status === 'registered' && !isEventPast ? `
+              <button class="btn-checkin" onclick="checkInUser('${reg.id}', '${user.full_name}', '${event.match_name}')">
+                ✅ Отметить посещение
+              </button>
+            ` : ''}
+            
+            ${reg.status === 'registered' ? `
+              <button class="btn-cancel" onclick="cancelRegistration('${reg.id}', '${user.full_name}', '${event.match_name}')">
+                ❌ Отменить запись
+              </button>
+            ` : ''}
+            
+            ${reg.status === 'cancelled' && !isEventPast ? `
+              <button class="btn-approve" onclick="reRegisterUser('${reg.id}', '${user.full_name}', '${event.match_name}')">
+                ↻ Восстановить запись
+              </button>
+            ` : ''}
+            
+            <button class="btn-delete" onclick="deleteRegistration('${reg.id}', '${user.full_name}', '${event.match_name}')">
+              🗑️ Удалить запись
+            </button>
+          </div>
+        `;
+        
+        container.appendChild(registrationItem);
+      });
+    }
+
+    // Отметить посещение
+    async function checkInUser(registrationId, userName, eventName) {
+      if (!confirm(`Отметить пользователя "${userName}" как посетившего мероприятие "${eventName}"?`)) {
+        return;
+      }
+      
+      try {
+        // Обновляем статус записи
+        const { error: updateError } = await supabaseClient
+          .from('registrations')
+          .update({ 
+            status: 'checked_in',
+            checkin_time: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', registrationId);
+
+        if (updateError) throw updateError;
+
+        // Начисляем очки пользователю за посещение
+        const { data: registrationData } = await supabaseClient
+          .from('registrations')
+          .select('user_id')
+          .eq('id', registrationId)
+          .single();
+
+        if (registrationData) {
+          await supabaseClient
+            .from('users')
+            .update({
+              points: supabaseClient.sql`points + 50`, // 50 очков за посещение
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', registrationData.user_id);
+        }
+
+        alert(`✅ Пользователь "${userName}" отмечен как посетивший мероприятие! +50 очков`);
+        loadRegistrations();
+        loadStats();
+        
+      } catch (error) {
+        console.error('Error checking in user:', error);
+        alert('❌ Ошибка при отметке посещения: ' + error.message);
+      }
+    }
+
+    // Отменить запись
+    async function cancelRegistration(registrationId, userName, eventName) {
+      if (!confirm(`Отменить запись пользователя "${userName}" на мероприятие "${eventName}"?`)) {
+        return;
+      }
+      
+      try {
+        const { error } = await supabaseClient
+          .from('registrations')
+          .update({ 
+            status: 'cancelled',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', registrationId);
+
+        if (error) throw error;
+
+        alert(`✅ Запись пользователя "${userName}" отменена`);
+        loadRegistrations();
+        loadStats();
+        
+      } catch (error) {
+        console.error('Error cancelling registration:', error);
+        alert('❌ Ошибка при отмене записи: ' + error.message);
+      }
+    }
+
+    // Восстановить запись
+    async function reRegisterUser(registrationId, userName, eventName) {
+      if (!confirm(`Восстановить запись пользователя "${userName}" на мероприятие "${eventName}"?`)) {
+        return;
+      }
+      
+      try {
+        const { error } = await supabaseClient
+          .from('registrations')
+          .update({ 
+            status: 'registered',
+            checkin_time: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', registrationId);
+
+        if (error) throw error;
+
+        alert(`✅ Запись пользователя "${userName}" восстановлена`);
+        loadRegistrations();
+        loadStats();
+        
+      } catch (error) {
+        console.error('Error re-registering user:', error);
+        alert('❌ Ошибка при восстановлении записи: ' + error.message);
+      }
+    }
+
+    // Удалить запись
+    async function deleteRegistration(registrationId, userName, eventName) {
+      if (!confirm(`Удалить запись пользователя "${userName}" на мероприятие "${eventName}"? Это действие нельзя отменить.`)) {
+        return;
+      }
+      
+      try {
+        const { error } = await supabaseClient
+          .from('registrations')
+          .delete()
+          .eq('id', registrationId);
+
+        if (error) throw error;
+
+        alert(`✅ Запись пользователя "${userName}" удалена`);
+        loadRegistrations();
+        loadStats();
+        
+      } catch (error) {
+        console.error('Error deleting registration:', error);
+        alert('❌ Ошибка при удалении записи: ' + error.message);
+      }
+    }
+
+    // QR сканер (базовая реализация)
+    let scannerActive = false;
+    let videoStream = null;
+
+    async function startQRScanner() {
+      try {
+        const video = document.getElementById('qr-video');
+        const startBtn = document.getElementById('start-scanner');
+        const stopBtn = document.getElementById('stop-scanner');
+        const resultDiv = document.getElementById('scanner-result');
+        
+        // Запрашиваем доступ к камере
+        videoStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: "environment" } 
+        });
+        
+        video.srcObject = videoStream;
+        video.style.display = 'block';
+        video.play();
+        
+        startBtn.style.display = 'none';
+        stopBtn.style.display = 'inline-block';
+        
+        resultDiv.innerHTML = '<p style="color: #FFC107;">🔍 Сканируйте QR код...</p>';
+        scannerActive = true;
+        
+        // В реальном приложении здесь нужно подключить библиотеку для распознавания QR
+        // Например, https://github.com/schmich/instascan или аналогичную
+        
+      } catch (error) {
+        console.error('Error starting QR scanner:', error);
+        alert('❌ Не удалось получить доступ к камере: ' + error.message);
+      }
+    }
+
+    function stopQRScanner() {
+      const video = document.getElementById('qr-video');
+      const startBtn = document.getElementById('start-scanner');
+      const stopBtn = document.getElementById('stop-scanner');
+      const resultDiv = document.getElementById('scanner-result');
+      
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+      }
+      
+      video.style.display = 'none';
+      video.srcObject = null;
+      
+      startBtn.style.display = 'inline-block';
+      stopBtn.style.display = 'none';
+      
+      resultDiv.innerHTML = '<p style="color: #aaa;">Сканер остановлен</p>';
+      scannerActive = false;
+    }
+
+    // Функция для обработки отсканированного QR кода
+    function processQRCode(qrData) {
+      const resultDiv = document.getElementById('scanner-result');
+      
+      try {
+        // В реальном приложении QR код будет содержать данные пользователя
+        // Например: {"user_id": "uuid", "registration_id": "uuid"}
+        const data = JSON.parse(qrData);
+        
+        if (data.user_id && data.registration_id) {
+          resultDiv.innerHTML = `<p style="color: #4CAF50;">✅ QR код распознан</p>
+                                <p>Ищем запись пользователя...</p>`;
+          
+          // Здесь должна быть логика поиска записи и отметки посещения
+          // Например: checkInUser(data.registration_id, "Пользователь", "Мероприятие");
+          
+        } else {
+          resultDiv.innerHTML = '<p style="color: #f44336;">❌ Неверный формат QR кода</p>';
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<p style="color: #f44336;">❌ Ошибка обработки QR кода</p>
+                              <p>${error.message}</p>`;
+      }
+    }
+
+    // =============================================
+    //   ОСТАЛЬНЫЕ ФУНКЦИИ (оставляем без изменений)
     // =============================================
     async function createEvent() {
       const name   = document.getElementById('match_name')?.value?.trim();
@@ -340,12 +846,10 @@
         
         loadEvents();
         loadStats();
+        loadEventsForFilter();
       }
     }
 
-    // =============================================
-    //   ЗАГРУЗКА СОБЫТИЙ
-    // =============================================
     async function loadEvents() {
       const { data, error } = await supabaseClient
         .from('events')
@@ -390,9 +894,6 @@
       });
     }
 
-    // =============================================
-    //   ЗАЯВКИ НА ЧЛЕНСТВО
-    // =============================================
     async function loadPending() {
       const { data, error } = await supabaseClient
         .from('users')
@@ -443,9 +944,6 @@
       });
     }
 
-    // =============================================
-    //   ВСЕ ПОЛЬЗОВАТЕЛИ
-    // =============================================
     async function loadAllUsers() {
       const { data, error } = await supabaseClient
         .from('users')
@@ -464,7 +962,7 @@
         return;
       }
 
-      window.allUsers = data; // Сохраняем для поиска
+      window.allUsers = data;
       renderUsers(data);
     }
 
@@ -519,14 +1017,10 @@
       renderUsers(filtered);
     }
 
-    // =============================================
-    //   ОДОБРЕНИЕ ЗАЯВКИ
-    // =============================================
     async function approveApplication(userId) {
       if (!confirm('Одобрить заявку и начислить 100 бонусных очков?')) return;
       
       try {
-        // Сначала получаем текущие очки пользователя
         const { data: userData, error: fetchError } = await supabaseClient
           .from('users')
           .select('points')
@@ -535,11 +1029,9 @@
 
         if (fetchError) throw fetchError;
         
-        // Рассчитываем новые очки
         const currentPoints = userData.points || 0;
         const newPoints = currentPoints + 100;
         
-        // Обновляем статус и очки одним запросом
         const { error: updateError } = await supabaseClient
           .from('users')
           .update({ 
@@ -553,7 +1045,6 @@
         
         alert('✅ Заявка успешно одобрена! +100 очков начислены.');
         
-        // Обновляем все списки
         loadPending();
         loadAllUsers();
         loadStats();
@@ -564,9 +1055,6 @@
       }
     }
 
-    // =============================================
-    //   ОТКЛОНЕНИЕ ЗАЯВКИ
-    // =============================================
     async function rejectApplication(userId) {
       if (!confirm('Отклонить заявку на членство?')) return;
       
@@ -583,7 +1071,6 @@
         
         alert('✅ Заявка отклонена.');
         
-        // Обновляем все списки
         loadPending();
         loadAllUsers();
         loadStats();
@@ -594,90 +1081,81 @@
       }
     }
 
-    // =============================================
-    //   УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЕМ
-    // =============================================
-async function updateUser() {
-  const telegramIdInput = document.getElementById('user-id-input').value.trim();
-  const addPoints = parseInt(document.getElementById('add-points').value) || 0;
-  const removePoints = parseInt(document.getElementById('remove-points').value) || 0;
-  const newStatus = document.getElementById('user-status-select').value;
-  
-  if (!telegramIdInput) {
-    alert('Введите Telegram ID пользователя');
-    return;
-  }
-  
-  // Проверяем, что telegramId - число
-  const telegramId = parseInt(telegramIdInput);
-  if (isNaN(telegramId)) {
-    alert('Telegram ID должен быть числом');
-    return;
-  }
-  
-  if (!addPoints && !removePoints && !newStatus) {
-    alert('Укажите что изменить: очки или статус');
-    return;
-  }
-  
-  try {
-    // Сначала ищем пользователя по telegram_id
-    const { data: userData, error: fetchError } = await supabaseClient
-      .from('users')
-      .select('id, points')
-      .eq('telegram_id', telegramId)
-      .maybeSingle();
-    
-    if (fetchError) {
-      alert('Ошибка при поиске пользователя: ' + fetchError.message);
-      return;
+    async function updateUser() {
+      const telegramIdInput = document.getElementById('user-id-input').value.trim();
+      const addPoints = parseInt(document.getElementById('add-points').value) || 0;
+      const removePoints = parseInt(document.getElementById('remove-points').value) || 0;
+      const newStatus = document.getElementById('user-status-select').value;
+      
+      if (!telegramIdInput) {
+        alert('Введите Telegram ID пользователя');
+        return;
+      }
+      
+      const telegramId = parseInt(telegramIdInput);
+      if (isNaN(telegramId)) {
+        alert('Telegram ID должен быть числом');
+        return;
+      }
+      
+      if (!addPoints && !removePoints && !newStatus) {
+        alert('Укажите что изменить: очки или статус');
+        return;
+      }
+      
+      try {
+        const { data: userData, error: fetchError } = await supabaseClient
+          .from('users')
+          .select('id, points')
+          .eq('telegram_id', telegramId)
+          .maybeSingle();
+        
+        if (fetchError) {
+          alert('Ошибка при поиске пользователя: ' + fetchError.message);
+          return;
+        }
+        
+        if (!userData) {
+          alert('Пользователь с таким Telegram ID не найден');
+          return;
+        }
+        
+        const updates = {};
+        const currentPoints = userData.points || 0;
+        
+        if (addPoints > 0 || removePoints > 0) {
+          updates.points = currentPoints + addPoints - removePoints;
+          if (updates.points < 0) updates.points = 0;
+        }
+        
+        if (newStatus) {
+          updates.membership_status = newStatus;
+        }
+        
+        updates.updated_at = new Date().toISOString();
+        
+        const { error } = await supabaseClient
+          .from('users')
+          .update(updates)
+          .eq('id', userData.id);
+        
+        if (error) throw error;
+        
+        alert('✅ Пользователь успешно обновлен!');
+        
+        document.getElementById('user-id-input').value = '';
+        document.getElementById('add-points').value = '';
+        document.getElementById('remove-points').value = '';
+        document.getElementById('user-status-select').value = '';
+        
+        loadPending();
+        loadAllUsers();
+        loadStats();
+        
+      } catch (error) {
+        alert('❌ Ошибка: ' + error.message);
+      }
     }
-    
-    if (!userData) {
-      alert('Пользователь с таким Telegram ID не найден');
-      return;
-    }
-    
-    const updates = {};
-    const currentPoints = userData.points || 0;
-    
-    // Рассчитываем новые очки
-    if (addPoints > 0 || removePoints > 0) {
-      updates.points = currentPoints + addPoints - removePoints;
-      if (updates.points < 0) updates.points = 0;
-    }
-    
-    // Обновляем статус
-    if (newStatus) {
-      updates.membership_status = newStatus;
-    }
-    
-    updates.updated_at = new Date().toISOString();
-    
-    const { error } = await supabaseClient
-      .from('users')
-      .update(updates)
-      .eq('id', userData.id);
-    
-    if (error) throw error;
-    
-    alert('✅ Пользователь успешно обновлен!');
-    
-    // Очищаем поля
-    document.getElementById('user-id-input').value = '';
-    document.getElementById('add-points').value = '';
-    document.getElementById('remove-points').value = '';
-    document.getElementById('user-status-select').value = '';
-    
-    // Обновляем списки
-    loadPending();
-    loadAllUsers();
-    loadStats();
-    
-  } catch (error) {
-    alert('❌ Ошибка: ' + error.message);
-  }
-}
 
     // =============================================
     //   ИНИЦИАЛИЗАЦИЯ СОБЫТИЙ НА СТРАНИЦЕ
@@ -691,8 +1169,18 @@ async function updateUser() {
       document.getElementById('refresh-pending')?.addEventListener('click', loadPending);
       document.getElementById('refresh-events')?.addEventListener('click', loadEvents);
       document.getElementById('refresh-users')?.addEventListener('click', loadAllUsers);
+      document.getElementById('refresh-registrations')?.addEventListener('click', loadRegistrations);
       document.getElementById('update-user-btn')?.addEventListener('click', updateUser);
       document.getElementById('logout-button')?.addEventListener('click', logout);
+      
+      // QR сканер
+      document.getElementById('start-scanner')?.addEventListener('click', startQRScanner);
+      document.getElementById('stop-scanner')?.addEventListener('click', stopQRScanner);
+      
+      // Поиск и фильтры для записей
+      document.getElementById('search-registration')?.addEventListener('input', loadRegistrations);
+      document.getElementById('filter-event')?.addEventListener('change', loadRegistrations);
+      document.getElementById('filter-status')?.addEventListener('change', loadRegistrations);
 
       // Автовход при наличии сессии
       if (localStorage.getItem('adminLoggedIn') === 'true') {
@@ -703,6 +1191,8 @@ async function updateUser() {
         loadEvents();
         loadPending();
         loadAllUsers();
+        loadRegistrations();
+        loadEventsForFilter();
       }
     });
   </script>
