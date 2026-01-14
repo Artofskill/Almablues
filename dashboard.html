@@ -84,15 +84,6 @@
       margin-bottom: 2rem;
     }
 
-    .section-title {
-      font-family: 'Oswald', sans-serif;
-      font-size: 1.5rem;
-      color: var(--gold);
-      margin-bottom: 1rem;
-      padding-bottom: 5px;
-      border-bottom: 2px solid var(--chelsea-blue);
-    }
-
     .card {
       background: rgba(255, 255, 255, 0.05);
       border-radius: 12px;
@@ -152,6 +143,24 @@
       font-size: 0.9rem;
     }
 
+    .btn-red {
+      background: #f44336;
+      color: white;
+    }
+
+    .btn-red:hover {
+      background: #d32f2f;
+    }
+
+    .btn-green {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .btn-green:hover {
+      background: #388E3C;
+    }
+
     .events-list {
       margin-top: 10px;
     }
@@ -174,6 +183,33 @@
     .event-date {
       color: var(--gold);
       font-size: 0.9rem;
+    }
+
+    .status-info {
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+    }
+
+    .status-pending {
+      background: rgba(255, 193, 7, 0.2);
+      border-left: 4px solid #FFC107;
+    }
+
+    .status-approved {
+      background: rgba(0, 200, 83, 0.2);
+      border-left: 4px solid #00C853;
+    }
+
+    .status-rejected {
+      background: rgba(244, 67, 54, 0.2);
+      border-left: 4px solid #F44336;
+    }
+
+    .status-new {
+      background: rgba(33, 150, 243, 0.2);
+      border-left: 4px solid #2196F3;
     }
 
     footer {
@@ -219,10 +255,16 @@
   <div class="dashboard-grid">
     
     <!-- Заявка на членство -->
-    <div class="card">
+    <div class="card" id="membership-card">
       <h3 class="card-title">👥 Заявка на членство</h3>
       <p class="card-description">Подайте заявку на официальное членство в фан-клубе</p>
-      <button class="btn btn-gold" id="membership-btn">Подать заявку</button>
+      
+      <div id="membership-status-info"></div>
+      
+      <div id="membership-actions">
+        <button class="btn btn-gold" id="membership-btn">Подать заявку</button>
+        <button class="btn btn-red" id="cancel-membership-btn" style="display: none; margin-top: 10px;">Отозвать заявку</button>
+      </div>
     </div>
 
     <!-- Рейтинги -->
@@ -237,21 +279,11 @@
       <h3 class="card-title">📅 Ближайшие мероприятия</h3>
       <p class="card-description">Последние матчи и встречи фанатов</p>
       
-      <div class="events-list">
+      <div class="events-list" id="events-list">
         <div class="event-item">
           <div class="event-info">
-            <h4>Chelsea vs Man City</h4>
-            <div class="event-date">15 марта 2025 • 20:00</div>
+            <h4>Загрузка мероприятий...</h4>
           </div>
-          <button class="btn btn-small" onclick="registerEvent(1)">Записаться</button>
-        </div>
-        
-        <div class="event-item">
-          <div class="event-info">
-            <h4>Встреча фанатов</h4>
-            <div class="event-date">22 марта 2025 • 18:00</div>
-          </div>
-          <button class="btn btn-small" onclick="registerEvent(2)">Записаться</button>
         </div>
       </div>
       
@@ -315,7 +347,180 @@
     location.href = 'index.html';
   }
 
-  // Загружаем данные пользователя
+  // === Функции для работы с членством ===
+  function getStatusText(status) {
+    const statusMap = {
+      'New': 'Новый',
+      'pending': 'Заявка на рассмотрении',
+      'approved': 'Член',
+      'rejected': 'Отклонено'
+    };
+    return statusMap[status] || status;
+  }
+
+  async function updateMembershipStatus() {
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('membership_status')
+      .eq('id', userId)
+      .single();
+
+    if (!error && data) {
+      const statusElement = document.getElementById('user-status');
+      const membershipCard = document.getElementById('membership-card');
+      const membershipBtn = document.getElementById('membership-btn');
+      const cancelBtn = document.getElementById('cancel-membership-btn');
+      const statusInfo = document.getElementById('membership-status-info');
+      
+      const status = data.membership_status || 'New';
+      
+      // Обновляем статус вверху
+      statusElement.textContent = `Статус: ${getStatusText(status)}`;
+      
+      // Управляем кнопками в карточке
+      switch(status) {
+        case 'New':
+          membershipBtn.textContent = 'Подать заявку на членство';
+          membershipBtn.disabled = false;
+          membershipBtn.style.display = 'block';
+          cancelBtn.style.display = 'none';
+          statusInfo.innerHTML = '<div class="status-info status-new">🎯 Вы еще не подавали заявку на членство</div>';
+          break;
+          
+        case 'pending':
+          membershipBtn.style.display = 'none';
+          cancelBtn.style.display = 'block';
+          statusInfo.innerHTML = `
+            <div class="status-info status-pending">
+              ⏳ Ваша заявка на рассмотрении. Ожидайте решения администратора.
+            </div>
+          `;
+          break;
+          
+        case 'approved':
+          membershipBtn.style.display = 'none';
+          cancelBtn.style.display = 'none';
+          statusInfo.innerHTML = `
+            <div class="status-info status-approved">
+              ✅ Ваше членство подтверждено! Добро пожаловать в официальный фан-клуб!
+            </div>
+          `;
+          break;
+          
+        case 'rejected':
+          membershipBtn.textContent = 'Подать заявку повторно';
+          membershipBtn.disabled = false;
+          membershipBtn.style.display = 'block';
+          cancelBtn.style.display = 'none';
+          statusInfo.innerHTML = `
+            <div class="status-info status-rejected">
+              ❌ Ваша заявка была отклонена. Вы можете подать ее снова.
+            </div>
+          `;
+          break;
+      }
+    }
+  }
+
+  async function applyForMembership() {
+    if (!confirm('Отправить заявку на членство в фан-клубе?')) {
+      return;
+    }
+    
+    const { error } = await supabaseClient
+      .from('users')
+      .update({ 
+        membership_status: 'pending',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    if (error) {
+      alert('Ошибка при отправке заявки: ' + error.message);
+    } else {
+      alert('✅ Заявка успешно отправлена! Администратор рассмотрит ее в ближайшее время.');
+      await updateMembershipStatus();
+    }
+  }
+
+  async function cancelMembershipApplication() {
+    if (!confirm('Отозвать заявку на членство?')) {
+      return;
+    }
+    
+    const { error } = await supabaseClient
+      .from('users')
+      .update({ 
+        membership_status: 'New',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    if (error) {
+      alert('Ошибка при отзыве заявки: ' + error.message);
+    } else {
+      alert('Заявка отозвана.');
+      await updateMembershipStatus();
+    }
+  }
+
+  // === Функции для мероприятий ===
+  async function loadEvents() {
+    try {
+      const { data, error } = await supabaseClient
+        .from('events')
+        .select('*')
+        .eq('is_open', true)
+        .gte('match_date', new Date().toISOString())
+        .order('match_date', { ascending: true })
+        .limit(3);
+
+      const eventsList = document.getElementById('events-list');
+      
+      if (error) {
+        eventsList.innerHTML = '<div class="event-item"><div class="event-info"><h4>Ошибка загрузки мероприятий</h4></div></div>';
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        eventsList.innerHTML = '<div class="event-item"><div class="event-info"><h4>Нет предстоящих мероприятий</h4></div></div>';
+        return;
+      }
+
+      eventsList.innerHTML = '';
+      
+      data.forEach(event => {
+        const eventDate = new Date(event.match_date);
+        const formattedDate = eventDate.toLocaleDateString('ru-RU', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        const eventDiv = document.createElement('div');
+        eventDiv.className = 'event-item';
+        eventDiv.innerHTML = `
+          <div class="event-info">
+            <h4>${event.match_name}</h4>
+            <div class="event-date">${formattedDate}</div>
+            <div style="font-size: 0.85rem; color: #aaa;">${event.bar_address}</div>
+          </div>
+          <button class="btn btn-small" onclick="registerEvent('${event.id}')">Записаться</button>
+        `;
+        eventsList.appendChild(eventDiv);
+      });
+    } catch (err) {
+      console.error('Error loading events:', err);
+    }
+  }
+
+  function registerEvent(eventId) {
+    alert(`Функция записи на мероприятие #${eventId} в разработке.`);
+  }
+
+  // === Загружаем данные пользователя ===
   async function loadUserData() {
     try {
       const { data, error } = await supabaseClient
@@ -326,24 +531,28 @@
 
       if (error || !data) {
         console.error('Error loading user:', error);
+        document.getElementById('user-name').textContent = 'Ошибка загрузки';
         return;
       }
 
       document.getElementById('user-name').textContent = data.full_name || 'Пользователь';
       document.getElementById('user-points').textContent = data.points || 0;
-      document.getElementById('user-status').textContent = `Статус: ${data.membership_status || 'New'}`;
+      document.getElementById('user-status').textContent = `Статус: ${getStatusText(data.membership_status || 'New')}`;
+      
+      // Обновляем статус членства
+      await updateMembershipStatus();
+      
     } catch (err) {
       console.error('Unexpected error:', err);
     }
   }
 
-  // Обработчики кнопок (заглушки)
+  // === Обработчики кнопок ===
   function setupButtonHandlers() {
     // Заявка на членство
-    document.getElementById('membership-btn').addEventListener('click', () => {
-      alert('Функция "Заявка на членство" в разработке');
-    });
-
+    document.getElementById('membership-btn').addEventListener('click', applyForMembership);
+    document.getElementById('cancel-membership-btn').addEventListener('click', cancelMembershipApplication);
+    
     // Рейтинги
     document.getElementById('ratings-btn').addEventListener('click', () => {
       alert('Функция "Рейтинги" в разработке');
@@ -380,14 +589,14 @@
     });
   }
 
-  // Запись на мероприятие
-  function registerEvent(eventId) {
-    alert(`Вы записаны на мероприятие #${eventId}. Функция записи в разработке.`);
+  // === Инициализация ===
+  async function init() {
+    await loadUserData();
+    await loadEvents();
+    setupButtonHandlers();
   }
 
-  // Инициализация
-  loadUserData();
-  setupButtonHandlers();
+  init();
 </script>
 </body>
 </html>
