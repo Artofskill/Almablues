@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Участники мероприятия — Chelsea FC KZ</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg-dark: #001028;
+      --chelsea-blue: #034694;
+      --chelsea-blue-dark: #002366;
+      --gold: #D4A017;
+      --gold-hover: #E8B923;
+      --text-light: #e0e0e0;
+      --white: #ffffff;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-light);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-family: 'Oswald', sans-serif;
+      color: var(--gold);
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: var(--gold);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 1.1rem;
+    }
+
+    .back-btn:hover {
+      text-decoration: underline;
+    }
+
+    .event-info {
+      background: rgba(3, 70, 148, 0.2);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 2rem;
+    }
+
+    .event-name {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.4rem;
+      color: var(--white);
+      margin-bottom: 5px;
+    }
+
+    .event-details {
+      color: #aaa;
+      font-size: 0.9rem;
+    }
+
+    .participants-list {
+      margin-top: 20px;
+    }
+
+    .participant-item {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      border-left: 4px solid #034694;
+    }
+
+    .participant-item.checked_in {
+      border-left-color: #4CAF50;
+    }
+
+    .participant-avatar {
+      width: 40px;
+      height: 40px;
+      background: var(--chelsea-blue);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+
+    .participant-info {
+      flex: 1;
+    }
+
+    .participant-name {
+      font-weight: 500;
+      margin-bottom: 3px;
+    }
+
+    .participant-status {
+      font-size: 0.8rem;
+      color: #aaa;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      margin-left: 5px;
+    }
+
+    .status-registered {
+      background: rgba(33, 150, 243, 0.2);
+      color: #2196F3;
+    }
+
+    .status-checked_in {
+      background: rgba(76, 175, 80, 0.2);
+      color: #4CAF50;
+    }
+
+    .status-cancelled {
+      background: rgba(244, 67, 54, 0.2);
+      color: #F44336;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #aaa;
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--gold);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: rgba(3, 70, 148, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--gold);
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: #aaa;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: #777;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <a href="dashboard.html" class="back-btn">← Назад в Dashboard</a>
+  
+  <header>
+    <h1 id="event-title">Участники мероприятия</h1>
+  </header>
+
+  <div id="event-details" class="event-info" style="display: none;">
+    <!-- Информация о мероприятии будет здесь -->
+  </div>
+
+  <div class="stats" id="stats-section" style="display: none;">
+    <div class="stat-card">
+      <div class="stat-number" id="total-participants">0</div>
+      <div class="stat-label">Всего записей</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="checked-in-participants">0</div>
+      <div class="stat-label">Отметились</div>
+    </div>
+  </div>
+
+  <div id="loading" class="loading">Загрузка участников...</div>
+  
+  <div id="participants-list" class="participants-list" style="display: none;">
+    <!-- Участники будут загружены здесь -->
+  </div>
+
+  <footer>
+    <p>Chelsea FC Supporters Club Kazakhstan • 2025</p>
+  </footer>
+</div>
+
+<script>
+  // === Telegram ===
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+
+  // === Supabase ===
+  const supabaseUrl = 'https://zuapiixwzkleygaijulx.supabase.co';
+  const supabaseKey = 'sb_publishable_Jsth-2GViNz5Ev3UWtrWTg_fbg4GAKx';
+
+  const supabaseClient = supabase.createClient(
+    supabaseUrl,
+    supabaseKey
+  );
+
+  const userId = localStorage.getItem('userId');
+
+  if (!userId) {
+    alert('Сессия истекла. Пожалуйста, вернитесь на главную страницу.');
+    location.href = 'index.html';
+  }
+
+  // Получаем ID мероприятия из URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const eventId = urlParams.get('event_id');
+
+  if (!eventId) {
+    document.getElementById('loading').innerHTML = '<p style="color: #ff6666;">Не указано мероприятие</p>';
+    throw new Error('No event_id in URL');
+  }
+
+  // Загружаем информацию о мероприятии и участниках
+  async function loadEventParticipants() {
+    try {
+      // Загружаем информацию о мероприятии
+      const { data: event, error: eventError } = await supabaseClient
+        .from('events')
+        .select('*')
+        .eq('id', eventId)
+        .single();
+
+      if (eventError || !event) {
+        document.getElementById('loading').innerHTML = '<p style="color: #ff6666;">Мероприятие не найдено</p>';
+        return;
+      }
+
+      // Обновляем заголовок и информацию о мероприятии
+      document.getElementById('event-title').textContent = `Участники: ${event.match_name}`;
+      
+      const eventDate = new Date(event.match_date);
+      const formattedDate = eventDate.toLocaleDateString('ru-RU', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      document.getElementById('event-details').innerHTML = `
+        <div class="event-name">${event.match_name}</div>
+        <div class="event-details">
+          📅 ${formattedDate}<br>
+          📍 ${event.bar_address}
+          ${event.description ? `<br>📝 ${event.description}` : ''}
+        </div>
+      `;
+      
+      document.getElementById('event-details').style.display = 'block';
+
+      // Загружаем участников мероприятия
+      const { data: participants, error: participantsError } = await supabaseClient
+        .from('registrations')
+        .select(`
+          id,
+          status,
+          checkin_time,
+          created_at,
+          users (
+            id,
+            full_name,
+            username
+          )
+        `)
+        .eq('event_id', eventId)
+        .eq('status', 'registered'); // Показываем только записанных, не отмененных
+
+      if (participantsError) {
+        document.getElementById('loading').innerHTML = '<p style="color: #ff6666;">Ошибка загрузки участников</p>';
+        return;
+      }
+
+      // Статистика
+      const total = participants ? participants.length : 0;
+      const checkedIn = participants ? participants.filter(p => p.status === 'checked_in').length : 0;
+      
+      document.getElementById('total-participants').textContent = total;
+      document.getElementById('checked-in-participants').textContent = checkedIn;
+      document.getElementById('stats-section').style.display = 'grid';
+
+      const loadingEl = document.getElementById('loading');
+      const listEl = document.getElementById('participants-list');
+      
+      if (!participants || participants.length === 0) {
+        loadingEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">👤</div>
+            <h3>Участников пока нет</h3>
+            <p>На это мероприятие еще никто не записался</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Скрываем loading, показываем список
+      loadingEl.style.display = 'none';
+      listEl.style.display = 'block';
+      
+      // Сортируем участников: сначала отметившиеся, затем по алфавиту
+      participants.sort((a, b) => {
+        if (a.status === 'checked_in' && b.status !== 'checked_in') return -1;
+        if (a.status !== 'checked_in' && b.status === 'checked_in') return 1;
+        return (a.users?.full_name || '').localeCompare(b.users?.full_name || '');
+      });
+
+      let html = '';
+      
+      participants.forEach(participant => {
+        const user = participant.users;
+        if (!user) return;
+        
+        const firstLetter = user.full_name ? user.full_name.charAt(0).toUpperCase() : '?';
+        const isCheckedIn = participant.status === 'checked_in';
+        const itemClass = isCheckedIn ? 'participant-item checked_in' : 'participant-item';
+        
+        const statusText = isCheckedIn ? 'Отметилcя' : 'Записан';
+        const statusClass = isCheckedIn ? 'status-checked_in' : 'status-registered';
+        
+        const checkinTime = participant.checkin_time ? 
+          new Date(participant.checkin_time).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'}) : '';
+        
+        html += `
+          <div class="${itemClass}">
+            <div class="participant-avatar">${firstLetter}</div>
+            <div class="participant-info">
+              <div class="participant-name">
+                ${user.full_name || 'Аноним'}
+                <span class="status-badge ${statusClass}">${statusText}</span>
+              </div>
+              <div class="participant-status">
+                @${user.username || 'нет username'}
+                ${checkinTime ? ` • 🕒 ${checkinTime}` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      listEl.innerHTML = html;
+      
+    } catch (err) {
+      console.error('Error loading participants:', err);
+      document.getElementById('loading').innerHTML = '<p style="color: #ff6666;">Неожиданная ошибка при загрузке</p>';
+    }
+  }
+
+  // Инициализация
+  loadEventParticipants();
+</script>
+</body>
+</html>
