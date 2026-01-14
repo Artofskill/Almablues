@@ -45,8 +45,9 @@
     .section { margin: 40px 0; padding: 20px; background: rgba(3,70,148,0.15); border-radius: 12px; }
     .event-list { margin-top: 20px; }
     .event-item { background: #0a1a3a; padding: 12px; margin: 8px 0; border-radius: 8px; }
-    .hidden { display: none; }
-    #status { text-align: center; color: #6a7; margin: 20px 0; }
+    .hidden { display: none !important; }
+    #status, #login-status { text-align: center; margin: 20px 0; font-size: 1.1rem; }
+    #login-status { color: #ff6666; }
   </style>
 </head>
 <body>
@@ -58,181 +59,219 @@
       <h2>Вход для администратора</h2>
       <input type="text" id="admin-login" placeholder="Логин" value="Admin">
       <input type="password" id="admin-pass" placeholder="Пароль">
-      <button onclick="loginAdmin()">Войти</button>
-      <div id="login-status" style="color:#f66; margin-top:10px;"></div>
+      <button id="login-button">Войти</button>
+      <div id="login-status"></div>
     </div>
 
     <div id="admin-content" class="hidden">
       <div id="status">Загрузка данных...</div>
 
-      <!-- Секция 1: Управление мероприятиями -->
       <div class="section">
-        <h2>Создать / Редактировать мероприятие</h2>
-        <input type="text" id="match_name" placeholder="Название матча (Chelsea vs Man Utd)">
-        <input type="datetime-local" id="match_date" placeholder="Дата и время">
+        <h2>Создать мероприятие</h2>
+        <input type="text" id="match_name" placeholder="Название матча (Chelsea vs Arsenal)">
+        <input type="datetime-local" id="match_date">
         <input type="text" id="bar_address" placeholder="Адрес бара">
-        <textarea id="description" placeholder="Описание (опционально)" rows="3"></textarea>
+        <textarea id="description" placeholder="Описание" rows="3"></textarea>
         <input type="number" id="max_participants" placeholder="Макс. участников (опционально)">
-        <label><input type="checkbox" id="is_open" checked> Открыта запись</label>
-        <button onclick="createEvent()">Создать мероприятие</button>
+        <label style="display:block; margin:10px 0;">
+          <input type="checkbox" id="is_open" checked> Открыта запись
+        </label>
+        <button id="create-event-button">Создать</button>
       </div>
 
-      <!-- Секция 2: Одобрение Membership -->
       <div class="section">
         <h2>Заявки на Membership</h2>
-        <div id="pending-list">Загрузка заявок...</div>
-        <button onclick="loadPendingMemberships()" style="margin-top:15px;">Обновить список</button>
+        <div id="pending-list">Загрузка...</div>
+        <button id="refresh-pending">Обновить список</button>
       </div>
 
-      <!-- Секция 3: Календарь событий (список) -->
       <div class="section">
         <h2>Календарь мероприятий</h2>
         <div id="events-list" class="event-list">Загрузка...</div>
-        <button onclick="loadEvents()" style="margin-top:15px;">Обновить календарь</button>
+        <button id="refresh-events">Обновить календарь</button>
       </div>
 
-      <button onclick="logoutAdmin()" style="background:#c00; margin-top:40px;">Выйти</button>
+      <button id="logout-button" style="background:#c00; margin-top:40px; width:100%;">Выйти</button>
     </div>
   </div>
 
   <script>
-    const supabaseUrl = 'https://zuapiixwzkleygaijulx.supabase.co';
-    const supabaseKey = 'sb-publishable_Jsth-2GViNz5Ev3UWtrWTg_fbg4GAKx';
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    // =============================================
+    //   ИНИЦИАЛИЗАЦИЯ SUPABASE (только один раз!)
+    // =============================================
+    const supabaseUrl  = 'https://zuapiixwzkleygaijulx.supabase.co';
+    const supabaseKey  = 'sb_publishable_Jsth-2GViNz5Ev3UWtrWTg_fbg4GAKx';
+      const supabaseClient = supabase.createClient(
+    supabaseUrl,
+    supabaseKey
+  );
 
     const ADMIN_LOGIN = 'Admin';
-    const ADMIN_PASS = '44mnUr8Xz';
+    const ADMIN_PASS  = '44mnUr8Xz';
 
-    function loginAdmin() {
-      const login = document.getElementById('admin-login').value.trim();
-      const pass = document.getElementById('admin-pass').value.trim();
-      const status = document.getElementById('login-status');
+    // =============================================
+    //   ПОМОГАЮЩИЕ ФУНКЦИИ
+    // =============================================
+    function showMsg(id, text, isError = false) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = text;
+        el.style.color = isError ? '#ff6666' : '#88ff88';
+      }
+    }
+
+    // =============================================
+    //   АВТОРИЗАЦИЯ
+    // =============================================
+    function tryLogin() {
+      const login = document.getElementById('admin-login')?.value?.trim();
+      const pass  = document.getElementById('admin-pass')?.value?.trim();
+
+      if (!login || !pass) {
+        showMsg('login-status', 'Введите логин и пароль', true);
+        return;
+      }
 
       if (login === ADMIN_LOGIN && pass === ADMIN_PASS) {
         localStorage.setItem('adminLoggedIn', 'true');
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('admin-content').classList.remove('hidden');
+        showMsg('status', 'Добро пожаловать в админ-панель');
         loadEvents();
-        loadPendingMemberships();
+        loadPending();
       } else {
-        status.textContent = 'Неверный логин или пароль';
+        showMsg('login-status', 'Неверный логин или пароль', true);
       }
     }
 
-    function logoutAdmin() {
+    function logout() {
       localStorage.removeItem('adminLoggedIn');
       location.reload();
     }
 
-    // Проверка при загрузке
-    window.addEventListener('load', () => {
-      if (localStorage.getItem('adminLoggedIn') === 'true') {
-        document.getElementById('login-section').classList.add('hidden');
-        document.getElementById('admin-content').classList.remove('hidden');
-        loadEvents();
-        loadPendingMemberships();
-      }
-    });
-
+    // =============================================
+    //   СОЗДАНИЕ МЕРОПРИЯТИЯ
+    // =============================================
     async function createEvent() {
-      const match_name = document.getElementById('match_name').value.trim();
-      const match_date = document.getElementById('match_date').value;
-      const bar_address = document.getElementById('bar_address').value.trim();
-      const description = document.getElementById('description').value.trim();
-      const max_participants = parseInt(document.getElementById('max_participants').value) || null;
-      const is_open = document.getElementById('is_open').checked;
+      const name   = document.getElementById('match_name')?.value?.trim();
+      const date   = document.getElementById('match_date')?.value;
+      const addr   = document.getElementById('bar_address')?.value?.trim();
+      const desc   = document.getElementById('description')?.value?.trim() || null;
+      const max    = parseInt(document.getElementById('max_participants')?.value) || null;
+      const open   = document.getElementById('is_open')?.checked ?? true;
 
-      if (!match_name || !match_date || !bar_address) {
-        alert('Заполните обязательные поля: матч, дата, адрес');
+      if (!name || !date || !addr) {
+        alert('Заполните обязательные поля');
         return;
       }
 
-      const { error } = await supabase.from('events').insert({
-        match_name,
-        match_date: new Date(match_date).toISOString(),
-        bar_address,
-        description: description || null,
-        max_participants,
-        is_open
+      const { error } = await supabaseClient.from('events').insert({
+        match_name: name,
+        match_date: new Date(date).toISOString(),
+        bar_address: addr,
+        description: desc,
+        max_participants: max,
+        is_open: open
       });
 
       if (error) {
         alert('Ошибка: ' + error.message);
       } else {
-        alert('Мероприятие создано!');
+        alert('Создано');
         loadEvents();
       }
     }
 
+    // =============================================
+    //   ЗАГРУЗКА СОБЫТИЙ
+    // =============================================
     async function loadEvents() {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('events')
         .select('*')
         .order('match_date', { ascending: true });
 
-      const list = document.getElementById('events-list');
-      list.innerHTML = '';
+      const cont = document.getElementById('events-list');
+      cont.innerHTML = error ? '<p>Ошибка загрузки</p>' :
+                       !data?.length ? '<p>Мероприятий нет</p>' : '';
 
-      if (error || !data?.length) {
-        list.innerHTML = '<p>Пока нет мероприятий</p>';
-        return;
-      }
+      if (error || !data?.length) return;
 
       data.forEach(ev => {
-        const div = document.createElement('div');
-        div.className = 'event-item';
-        div.innerHTML = `
+        const d = document.createElement('div');
+        d.className = 'event-item';
+        d.innerHTML = `
           <strong>${ev.match_name}</strong><br>
           ${new Date(ev.match_date).toLocaleString('ru-RU')}<br>
-          ${ev.bar_address}<br>
-          ${ev.is_open ? 'Открыта запись' : 'Закрыта'} • Макс: ${ev.max_participants || '∞'}
+          ${ev.bar_address} • ${ev.is_open ? 'Открыто' : 'Закрыто'}
         `;
-        list.appendChild(div);
+        cont.appendChild(d);
       });
     }
 
-    async function loadPendingMemberships() {
-      const { data, error } = await supabase
+    // =============================================
+    //   ЗАЯВКИ НА ЧЛЕНСТВО
+    // =============================================
+    async function loadPending() {
+      const { data, error } = await supabaseClient
         .from('users')
-        .select('id, full_name, username, membership_status')
-        .eq('membership_status', 'pending');  // предполагаем, что заявка = 'pending'
+        .select('id, full_name, username')
+        .eq('membership_status', 'pending');
 
-      const list = document.getElementById('pending-list');
-      list.innerHTML = '';
+      const cont = document.getElementById('pending-list');
+      cont.innerHTML = error ? '<p>Ошибка</p>' :
+                       !data?.length ? '<p>Заявок нет</p>' : '';
 
-      if (error || !data?.length) {
-        list.innerHTML = '<p>Нет активных заявок</p>';
-        return;
-      }
+      if (error || !data?.length) return;
 
-      data.forEach(user => {
-        const div = document.createElement('div');
-        div.className = 'event-item';
-        div.innerHTML = `
-          ${user.full_name} (@${user.username || 'нет'})<br>
-          <button onclick="updateMembership('${user.id}', 'approved')">Одобрить</button>
-          <button onclick="updateMembership('${user.id}', 'rejected')" style="background:#c00;">Отклонить</button>
+      data.forEach(u => {
+        const d = document.createElement('div');
+        d.className = 'event-item';
+        d.innerHTML = `
+          ${u.full_name} (@${u.username || 'нет'})<br>
+          <button onclick="changeStatus('${u.id}', 'approved')">Одобрить</button>
+          <button onclick="changeStatus('${u.id}', 'rejected')" style="background:#c00;">Отклонить</button>
         `;
-        list.appendChild(div);
+        cont.appendChild(d);
       });
     }
 
-    async function updateMembership(userId, newStatus) {
-      if (!confirm(`Вы уверены? Статус → ${newStatus}`)) return;
-
-      const { error } = await supabase
+    async function changeStatus(id, status) {
+      if (!confirm(`Установить статус "${status}"?`)) return;
+      const { error } = await supabaseClient
         .from('users')
-        .update({ membership_status: newStatus })
-        .eq('id', userId);
+        .update({ membership_status: status })
+        .eq('id', id);
 
-      if (error) {
-        alert('Ошибка: ' + error.message);
-      } else {
-        alert('Статус обновлён');
-        loadPendingMemberships();
+      if (error) alert('Ошибка: ' + error.message);
+      else {
+        alert('Обновлено');
+        loadPending();
       }
     }
+
+    // =============================================
+    //   ИНИЦИАЛИЗАЦИЯ СОБЫТИЙ НА СТРАНИЦЕ
+    // =============================================
+    document.addEventListener('DOMContentLoaded', () => {
+      // Кнопка входа
+      document.getElementById('login-button')?.addEventListener('click', tryLogin);
+
+      // Кнопки внутри админки
+      document.getElementById('create-event-button')?.addEventListener('click', createEvent);
+      document.getElementById('refresh-pending')?.addEventListener('click', loadPending);
+      document.getElementById('refresh-events')?.addEventListener('click', loadEvents);
+      document.getElementById('logout-button')?.addEventListener('click', logout);
+
+      // Автовход при наличии сессии
+      if (localStorage.getItem('adminLoggedIn') === 'true') {
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('admin-content').classList.remove('hidden');
+        showMsg('status', 'Автовход выполнен');
+        loadEvents();
+        loadPending();
+      }
+    });
   </script>
-
 </body>
 </html>
