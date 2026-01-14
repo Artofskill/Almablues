@@ -431,10 +431,10 @@
             </div>
           </div>
           <div class="action-buttons">
-            <button class="btn-approve" onclick="changeStatus('${user.id}', 'approved')">
+            <button class="btn-approve" onclick="approveApplication('${user.id}')">
               ✅ Одобрить (+100 очков)
             </button>
-            <button class="btn-reject" onclick="changeStatus('${user.id}', 'rejected')">
+            <button class="btn-reject" onclick="rejectApplication('${user.id}')">
               ❌ Отклонить
             </button>
           </div>
@@ -520,39 +520,38 @@
     }
 
     // =============================================
-    //   ИЗМЕНЕНИЕ СТАТУСА ЗАЯВКИ
+    //   ОДОБРЕНИЕ ЗАЯВКИ
     // =============================================
-    async function changeStatus(userId, status) {
-      const action = status === 'approved' ? 'одобрить' : 'отклонить';
-      const message = status === 'approved' 
-        ? 'Одобрить заявку и начислить 100 бонусных очков?'
-        : 'Отклонить заявку на членство?';
-      
-      if (!confirm(message)) return;
+    async function approveApplication(userId) {
+      if (!confirm('Одобрить заявку и начислить 100 бонусных очков?')) return;
       
       try {
-        // Обновляем статус
-        const { error } = await supabaseClient
+        // Сначала получаем текущие очки пользователя
+        const { data: userData, error: fetchError } = await supabaseClient
+          .from('users')
+          .select('points')
+          .eq('id', userId)
+          .single();
+
+        if (fetchError) throw fetchError;
+        
+        // Рассчитываем новые очки
+        const currentPoints = userData.points || 0;
+        const newPoints = currentPoints + 100;
+        
+        // Обновляем статус и очки одним запросом
+        const { error: updateError } = await supabaseClient
           .from('users')
           .update({ 
-            membership_status: status,
+            membership_status: 'approved',
+            points: newPoints,
             updated_at: new Date().toISOString()
           })
           .eq('id', userId);
 
-        if (error) throw error;
+        if (updateError) throw updateError;
         
-        // Начисляем бонусные очки при одобрении
-        if (status === 'approved') {
-          await supabaseClient
-            .from('users')
-            .update({ 
-              points: supabaseClient.sql`points + 100`
-            })
-            .eq('id', userId);
-        }
-        
-        alert(`✅ Заявка успешно ${status === 'approved' ? 'одобрена' : 'отклонена'}!`);
+        alert('✅ Заявка успешно одобрена! +100 очков начислены.');
         
         // Обновляем все списки
         loadPending();
@@ -561,6 +560,37 @@
         
       } catch (error) {
         alert('❌ Ошибка: ' + error.message);
+        console.error('Ошибка одобрения заявки:', error);
+      }
+    }
+
+    // =============================================
+    //   ОТКЛОНЕНИЕ ЗАЯВКИ
+    // =============================================
+    async function rejectApplication(userId) {
+      if (!confirm('Отклонить заявку на членство?')) return;
+      
+      try {
+        const { error } = await supabaseClient
+          .from('users')
+          .update({ 
+            membership_status: 'rejected',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId);
+
+        if (error) throw error;
+        
+        alert('✅ Заявка отклонена.');
+        
+        // Обновляем все списки
+        loadPending();
+        loadAllUsers();
+        loadStats();
+        
+      } catch (error) {
+        alert('❌ Ошибка: ' + error.message);
+        console.error('Ошибка отклонения заявки:', error);
       }
     }
 
@@ -584,14 +614,22 @@
       }
       
       try {
-        const updates = {};
+        // Сначала получаем текущие данные пользователя
+        const { data: userData, error: fetchError } = await supabaseClient
+          .from('users')
+          .select('points')
+          .eq('id', userId)
+          .single();
         
-        // Обновляем очки
-        if (addPoints > 0) {
-          updates.points = supabaseClient.sql`points + ${addPoints}`;
-        }
-        if (removePoints > 0) {
-          updates.points = supabaseClient.sql`points - ${removePoints}`;
+        if (fetchError) throw fetchError;
+        
+        const updates = {};
+        const currentPoints = userData.points || 0;
+        
+        // Рассчитываем новые очки
+        if (addPoints > 0 || removePoints > 0) {
+          updates.points = currentPoints + addPoints - removePoints;
+          if (updates.points < 0) updates.points = 0;
         }
         
         // Обновляем статус
