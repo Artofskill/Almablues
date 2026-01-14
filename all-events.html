@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Все мероприятия — Chelsea FC KZ</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg-dark: #001028;
+      --chelsea-blue: #034694;
+      --chelsea-blue-dark: #002366;
+      --gold: #D4A017;
+      --gold-hover: #E8B923;
+      --text-light: #e0e0e0;
+      --white: #ffffff;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-light);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-family: 'Oswald', sans-serif;
+      color: var(--gold);
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: var(--gold);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 1.1rem;
+    }
+
+    .back-btn:hover {
+      text-decoration: underline;
+    }
+
+    .events-list {
+      margin-top: 20px;
+    }
+
+    .event-item {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border-left: 4px solid #034694;
+    }
+
+    .event-item.closed {
+      border-left-color: #f44336;
+      opacity: 0.7;
+    }
+
+    .event-item.full {
+      border-left-color: #FFC107;
+    }
+
+    .event-name {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.2rem;
+      color: var(--white);
+      margin-bottom: 5px;
+    }
+
+    .event-details {
+      color: #aaa;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+
+    .event-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 10px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background: var(--chelsea-blue);
+      color: var(--white);
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      margin-right: 10px;
+      margin-top: 5px;
+    }
+
+    .btn:hover {
+      background: var(--chelsea-blue-dark);
+    }
+
+    .btn-green {
+      background: #4CAF50;
+    }
+
+    .btn-green:hover {
+      background: #388E3C;
+    }
+
+    .btn-red {
+      background: #f44336;
+    }
+
+    .btn-red:hover {
+      background: #d32f2f;
+    }
+
+    .btn-gold {
+      background: var(--gold);
+      color: var(--bg-dark);
+    }
+
+    .btn-gold:hover {
+      background: var(--gold-hover);
+    }
+
+    .btn-disabled {
+      background: #666;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    .btn-disabled:hover {
+      background: #666;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #aaa;
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--gold);
+    }
+
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+    }
+
+    .tab.active {
+      border-bottom-color: var(--gold);
+      color: var(--gold);
+      font-weight: bold;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: #777;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <a href="dashboard.html" class="back-btn">← Назад в Dashboard</a>
+  
+  <header>
+    <h1>📅 Все мероприятия</h1>
+    <p>Расписание матчей и встреч фанатов</p>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('upcoming')">Предстоящие</div>
+    <div class="tab" onclick="switchTab('past')">Прошедшие</div>
+    <div class="tab" onclick="switchTab('all')">Все</div>
+  </div>
+
+  <div id="loading" class="loading">Загрузка мероприятий...</div>
+  
+  <div id="upcoming-tab" class="tab-content active">
+    <div id="upcoming-events" class="events-list">
+      <!-- Предстоящие мероприятия -->
+    </div>
+  </div>
+
+  <div id="past-tab" class="tab-content">
+    <div id="past-events" class="events-list">
+      <!-- Прошедшие мероприятия -->
+    </div>
+  </div>
+
+  <div id="all-tab" class="tab-content">
+    <div id="all-events" class="events-list">
+      <!-- Все мероприятия -->
+    </div>
+  </div>
+
+  <footer>
+    <p>Chelsea FC Supporters Club Kazakhstan • 2025</p>
+  </footer>
+</div>
+
+<script>
+  // === Telegram ===
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+
+  // === Supabase ===
+  const supabaseUrl = 'https://zuapiixwzkleygaijulx.supabase.co';
+  const supabaseKey = 'sb_publishable_Jsth-2GViNz5Ev3UWtrWTg_fbg4GAKx';
+
+  const supabaseClient = supabase.createClient(
+    supabaseUrl,
+    supabaseKey
+  );
+
+  const userId = localStorage.getItem('userId');
+
+  if (!userId) {
+    alert('Сессия истекла. Пожалуйста, вернитесь на главную страницу.');
+    location.href = 'index.html';
+  }
+
+  function switchTab(tabName) {
+    // Обновляем активные табы
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+  }
+
+  // Загружаем все мероприятия
+  async function loadAllEvents() {
+    try {
+      const { data: events, error } = await supabaseClient
+        .from('events')
+        .select('*')
+        .order('match_date', { ascending: false });
+
+      const loadingEl = document.getElementById('loading');
+      
+      if (error) {
+        loadingEl.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки мероприятий</p>';
+        return;
+      }
+      
+      if (!events || events.length === 0) {
+        loadingEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <h3>Мероприятий нет</h3>
+            <p>Пока не запланировано ни одного мероприятия</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Скрываем loading
+      loadingEl.style.display = 'none';
+      
+      const now = new Date();
+      const upcomingEvents = [];
+      const pastEvents = [];
+      
+      for (const event of events) {
+        const eventDate = new Date(event.match_date);
+        
+        // Получаем количество записанных участников
+        const { count: registeredCount } = await supabaseClient
+          .from('registrations')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_id', event.id)
+          .eq('status', 'registered');
+        
+        event.registeredCount = registeredCount || 0;
+        
+        // Проверяем, записан ли текущий пользователь
+        const { data: userRegistration } = await supabaseClient
+          .from('registrations')
+          .select('status')
+          .eq('user_id', userId)
+          .eq('event_id', event.id)
+          .maybeSingle();
+        
+        event.isRegistered = userRegistration && userRegistration.status === 'registered';
+        event.userStatus = userRegistration ? userRegistration.status : null;
+        
+        if (eventDate >= now) {
+          upcomingEvents.push(event);
+        } else {
+          pastEvents.push(event);
+        }
+      }
+      
+      // Сортируем предстоящие по дате (от ближайших)
+      upcomingEvents.sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
+      
+      // Сортируем прошедшие по дате (от недавних)
+      pastEvents.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
+      
+      // Отображаем мероприятия
+      renderEvents('upcoming-events', upcomingEvents, false);
+      renderEvents('past-events', pastEvents, true);
+      renderEvents('all-events', events, false);
+      
+    } catch (err) {
+      console.error('Error loading events:', err);
+      document.getElementById('loading').innerHTML = '<p style="color: #ff6666;">Неожиданная ошибка при загрузке</p>';
+    }
+  }
+
+  function renderEvents(containerId, events, isPast) {
+    const container = document.getElementById(containerId);
+    
+    if (!events || events.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <h3>Мероприятий нет</h3>
+          <p>${isPast ? 'Нет прошедших мероприятий' : 'Нет предстоящих мероприятий'}</p>
+        </div>
+      `;
+      return;
+    }
+    
+    let html = '';
+    
+    events.forEach(event => {
+      const eventDate = new Date(event.match_date);
+      const formattedDate = eventDate.toLocaleDateString('ru-RU', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const isFull = event.max_participants && event.registeredCount >= event.max_participants;
+      const isClosed = !event.is_open || isPast;
+      const itemClass = isClosed ? 'event-item closed' : 
+                       isFull ? 'event-item full' : 'event-item';
+      
+      let buttonHtml = '';
+      
+      if (!isPast) {
+        if (event.isRegistered) {
+          buttonHtml = `
+            <button class="btn btn-disabled" disabled>✓ Записан</button>
+            <a href="event-participants.html?event_id=${event.id}" class="btn btn-gold">Участники</a>
+          `;
+        } else if (isClosed) {
+          buttonHtml = `<button class="btn btn-disabled" disabled>Запись закрыта</button>`;
+        } else if (isFull) {
+          buttonHtml = `<button class="btn btn-disabled" disabled>Мест нет</button>`;
+        } else {
+          buttonHtml = `
+            <button class="btn btn-green" onclick="registerForEvent('${event.id}', '${event.match_name}')">
+              Записаться
+            </button>
+            <a href="event-participants.html?event_id=${event.id}" class="btn">Участники</a>
+          `;
+        }
+      } else {
+        buttonHtml = `
+          <a href="event-participants.html?event_id=${event.id}" class="btn">Участники</a>
+        `;
+      }
+      
+      html += `
+        <div class="${itemClass}">
+          <div class="event-name">${event.match_name}</div>
+          <div class="event-details">
+            📅 ${formattedDate}<br>
+            📍 ${event.bar_address}
+            ${event.description ? `<br>📝 ${event.description}` : ''}
+          </div>
+          <div class="event-meta">
+            <span>👥 ${event.registeredCount}${event.max_participants ? `/${event.max_participants}` : ''} участников</span>
+            <span>${event.is_open ? '✅ Открыта запись' : '❌ Закрыта запись'}</span>
+          </div>
+          <div>
+            ${buttonHtml}
+          </div>
+        </div>
+      `;
+    });
+    
+    container.innerHTML = html;
+  }
+
+  async function registerForEvent(eventId, eventName) {
+    if (!confirm(`Записаться на мероприятие "${eventName}"?`)) {
+      return;
+    }
+    
+    try {
+      // Проверяем, существует ли уже запись
+      const { data: existing } = await supabaseClient
+        .from('registrations')
+        .select('id, status')
+        .eq('user_id', userId)
+        .eq('event_id', eventId)
+        .maybeSingle();
+      
+      if (existing) {
+        // Обновляем существующую запись
+        const { error } = await supabaseClient
+          .from('registrations')
+          .update({ 
+            status: 'registered',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+        
+        if (error) throw error;
+        alert('✅ Вы снова записаны на мероприятие!');
+      } else {
+        // Создаем новую запись
+        const { error } = await supabaseClient
+          .from('registrations')
+          .insert({
+            user_id: userId,
+            event_id: eventId,
+            status: 'registered'
+          });
+        
+        if (error) throw error;
+        alert('✅ Вы успешно записались на мероприятие!');
+      }
+      
+      // Перезагружаем мероприятия
+      loadAllEvents();
+      
+    } catch (error) {
+      console.error('Error registering for event:', error);
+      alert('❌ Ошибка при записи: ' + error.message);
+    }
+  }
+
+  // Инициализация
+  loadAllEvents();
+</script>
+</body>
+</html>
