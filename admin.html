@@ -191,23 +191,23 @@
         <button id="refresh-events" class="btn">🔄 Обновить календарь</button>
       </div>
 
-      <!-- Управление пользователем -->
-      <div class="section">
-        <h2>⚙️ Управление пользователем</h2>
-        <input type="text" id="user-id-input" placeholder="ID пользователя">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <input type="number" id="add-points" placeholder="Добавить очки">
-          <input type="number" id="remove-points" placeholder="Убрать очки">
-        </div>
-        <select id="user-status-select">
-          <option value="">Выберите статус</option>
-          <option value="New">New - Новый</option>
-          <option value="pending">pending - На рассмотрении</option>
-          <option value="approved">approved - Подтвержден</option>
-          <option value="rejected">rejected - Отклонен</option>
-        </select>
-        <button id="update-user-btn" class="btn">Обновить пользователя</button>
-      </div>
+<!-- Управление пользователем -->
+<div class="section">
+  <h2>⚙️ Управление пользователем</h2>
+  <input type="text" id="user-id-input" placeholder="Telegram ID пользователя">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+    <input type="number" id="add-points" placeholder="Добавить очки">
+    <input type="number" id="remove-points" placeholder="Убрать очки">
+  </div>
+  <select id="user-status-select">
+    <option value="">Выберите статус</option>
+    <option value="New">New - Новый</option>
+    <option value="pending">pending - На рассмотрении</option>
+    <option value="approved">approved - Подтвержден</option>
+    <option value="rejected">rejected - Отклонен</option>
+  </select>
+  <button id="update-user-btn" class="btn">Обновить пользователя</button>
+</div>
 
       <button id="logout-button" style="background:#c00; margin-top:40px; width:100%;">Выйти из админ-панели</button>
     </div>
@@ -597,72 +597,87 @@
     // =============================================
     //   УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЕМ
     // =============================================
-    async function updateUser() {
-      const userId = document.getElementById('user-id-input').value.trim();
-      const addPoints = parseInt(document.getElementById('add-points').value) || 0;
-      const removePoints = parseInt(document.getElementById('remove-points').value) || 0;
-      const newStatus = document.getElementById('user-status-select').value;
-      
-      if (!userId) {
-        alert('Введите ID пользователя');
-        return;
-      }
-      
-      if (!addPoints && !removePoints && !newStatus) {
-        alert('Укажите что изменить: очки или статус');
-        return;
-      }
-      
-      try {
-        // Сначала получаем текущие данные пользователя
-        const { data: userData, error: fetchError } = await supabaseClient
-          .from('users')
-          .select('points')
-          .eq('id', userId)
-          .single();
-        
-        if (fetchError) throw fetchError;
-        
-        const updates = {};
-        const currentPoints = userData.points || 0;
-        
-        // Рассчитываем новые очки
-        if (addPoints > 0 || removePoints > 0) {
-          updates.points = currentPoints + addPoints - removePoints;
-          if (updates.points < 0) updates.points = 0;
-        }
-        
-        // Обновляем статус
-        if (newStatus) {
-          updates.membership_status = newStatus;
-        }
-        
-        updates.updated_at = new Date().toISOString();
-        
-        const { error } = await supabaseClient
-          .from('users')
-          .update(updates)
-          .eq('id', userId);
-        
-        if (error) throw error;
-        
-        alert('✅ Пользователь успешно обновлен!');
-        
-        // Очищаем поля
-        document.getElementById('user-id-input').value = '';
-        document.getElementById('add-points').value = '';
-        document.getElementById('remove-points').value = '';
-        document.getElementById('user-status-select').value = '';
-        
-        // Обновляем списки
-        loadPending();
-        loadAllUsers();
-        loadStats();
-        
-      } catch (error) {
-        alert('❌ Ошибка: ' + error.message);
-      }
+async function updateUser() {
+  const telegramIdInput = document.getElementById('user-id-input').value.trim();
+  const addPoints = parseInt(document.getElementById('add-points').value) || 0;
+  const removePoints = parseInt(document.getElementById('remove-points').value) || 0;
+  const newStatus = document.getElementById('user-status-select').value;
+  
+  if (!telegramIdInput) {
+    alert('Введите Telegram ID пользователя');
+    return;
+  }
+  
+  // Проверяем, что telegramId - число
+  const telegramId = parseInt(telegramIdInput);
+  if (isNaN(telegramId)) {
+    alert('Telegram ID должен быть числом');
+    return;
+  }
+  
+  if (!addPoints && !removePoints && !newStatus) {
+    alert('Укажите что изменить: очки или статус');
+    return;
+  }
+  
+  try {
+    // Сначала ищем пользователя по telegram_id
+    const { data: userData, error: fetchError } = await supabaseClient
+      .from('users')
+      .select('id, points')
+      .eq('telegram_id', telegramId)
+      .maybeSingle();
+    
+    if (fetchError) {
+      alert('Ошибка при поиске пользователя: ' + fetchError.message);
+      return;
     }
+    
+    if (!userData) {
+      alert('Пользователь с таким Telegram ID не найден');
+      return;
+    }
+    
+    const updates = {};
+    const currentPoints = userData.points || 0;
+    
+    // Рассчитываем новые очки
+    if (addPoints > 0 || removePoints > 0) {
+      updates.points = currentPoints + addPoints - removePoints;
+      if (updates.points < 0) updates.points = 0;
+    }
+    
+    // Обновляем статус
+    if (newStatus) {
+      updates.membership_status = newStatus;
+    }
+    
+    updates.updated_at = new Date().toISOString();
+    
+    const { error } = await supabaseClient
+      .from('users')
+      .update(updates)
+      .eq('id', userData.id);
+    
+    if (error) throw error;
+    
+    alert('✅ Пользователь успешно обновлен!');
+    
+    // Очищаем поля
+    document.getElementById('user-id-input').value = '';
+    document.getElementById('add-points').value = '';
+    document.getElementById('remove-points').value = '';
+    document.getElementById('user-status-select').value = '';
+    
+    // Обновляем списки
+    loadPending();
+    loadAllUsers();
+    loadStats();
+    
+  } catch (error) {
+    alert('❌ Ошибка: ' + error.message);
+  }
+}
 
     // =============================================
     //   ИНИЦИАЛИЗАЦИЯ СОБЫТИЙ НА СТРАНИЦЕ
