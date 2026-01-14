@@ -632,8 +632,7 @@
       <button id="logout-button" style="background:#c00; margin-top:40px; width:100%;">Выйти из админ-панели</button>
     </div>
   </div>
-
-  <script>
+<script>
     // === Константы ===
     const supabaseUrl = 'https://zuapiixwzkleygaijulx.supabase.co';
     const supabaseKey = 'sb_publishable_Jsth-2GViNz5Ev3UWtrWTg_fbg4GAKx';
@@ -991,7 +990,7 @@
       }
     }
 
-    // === Управление записями на мероприятия (остается без изменений) ===
+    // === Управление записями на мероприятия ===
     async function loadRegistrations() {
       try {
         let query = supabaseClient
@@ -1147,222 +1146,17 @@
         container.appendChild(registrationItem);
       });
     }
-    // Отметить посещение
-    async function checkInUser(registrationId, userName, eventName) {
-      if (!confirm(`Отметить пользователя "${userName}" как посетившего мероприятие "${eventName}"?`)) {
-        return;
-      }
-      
-      try {
-        // Обновляем статус записи
-        const { error: updateError } = await supabaseClient
-          .from('registrations')
-          .update({ 
-            status: 'checked_in',
-            checkin_time: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', registrationId);
 
-        if (updateError) throw updateError;
-
-        // Начисляем очки пользователю за посещение
-        const { data: registrationData } = await supabaseClient
-          .from('registrations')
-          .select('user_id')
-          .eq('id', registrationId)
-          .single();
-
-        if (registrationData) {
-          await supabaseClient
-            .from('users')
-            .update({
-              points: supabaseClient.sql`points + 50`, // 50 очков за посещение
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', registrationData.user_id);
-        }
-
-        alert(`✅ Пользователь "${userName}" отмечен как посетивший мероприятие! +50 очков`);
-        loadRegistrations();
-        loadStats();
-        
-      } catch (error) {
-        console.error('Error checking in user:', error);
-        alert('❌ Ошибка при отметке посещения: ' + error.message);
-      }
-    }
-
-    // Отменить запись
-    async function cancelRegistration(registrationId, userName, eventName) {
-      if (!confirm(`Отменить запись пользователя "${userName}" на мероприятие "${eventName}"?`)) {
-        return;
-      }
-      
-      try {
-        const { error } = await supabaseClient
-          .from('registrations')
-          .update({ 
-            status: 'cancelled',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', registrationId);
-
-        if (error) throw error;
-
-        alert(`✅ Запись пользователя "${userName}" отменена`);
-        loadRegistrations();
-        loadStats();
-        
-      } catch (error) {
-        console.error('Error cancelling registration:', error);
-        alert('❌ Ошибка при отмене записи: ' + error.message);
-      }
-    }
-
-    // Восстановить запись
-    async function reRegisterUser(registrationId, userName, eventName) {
-      if (!confirm(`Восстановить запись пользователя "${userName}" на мероприятие "${eventName}"?`)) {
-        return;
-      }
-      
-      try {
-        const { error } = await supabaseClient
-          .from('registrations')
-          .update({ 
-            status: 'registered',
-            checkin_time: null,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', registrationId);
-
-        if (error) throw error;
-
-        alert(`✅ Запись пользователя "${userName}" восстановлена`);
-        loadRegistrations();
-        loadStats();
-        
-      } catch (error) {
-        console.error('Error re-registering user:', error);
-        alert('❌ Ошибка при восстановлении записи: ' + error.message);
-      }
-    }
-
-    // Удалить запись
-    async function deleteRegistration(registrationId, userName, eventName) {
-      if (!confirm(`Удалить запись пользователя "${userName}" на мероприятие "${eventName}"? Это действие нельзя отменить.`)) {
-        return;
-      }
-      
-      try {
-        const { error } = await supabaseClient
-          .from('registrations')
-          .delete()
-          .eq('id', registrationId);
-
-        if (error) throw error;
-
-        alert(`✅ Запись пользователя "${userName}" удалена`);
-        loadRegistrations();
-        loadStats();
-        
-      } catch (error) {
-        console.error('Error deleting registration:', error);
-        alert('❌ Ошибка при удалении записи: ' + error.message);
-      }
-    }
-
-    // QR сканер (базовая реализация)
-    let scannerActive = false;
-    let videoStream = null;
-
-    async function startQRScanner() {
-      try {
-        const video = document.getElementById('qr-video');
-        const startBtn = document.getElementById('start-scanner');
-        const stopBtn = document.getElementById('stop-scanner');
-        const resultDiv = document.getElementById('scanner-result');
-        
-        // Запрашиваем доступ к камере
-        videoStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: "environment" } 
-        });
-        
-        video.srcObject = videoStream;
-        video.style.display = 'block';
-        video.play();
-        
-        startBtn.style.display = 'none';
-        stopBtn.style.display = 'inline-block';
-        
-        resultDiv.innerHTML = '<p style="color: #FFC107;">🔍 Сканируйте QR код...</p>';
-        scannerActive = true;
-        
-        // В реальном приложении здесь нужно подключить библиотеку для распознавания QR
-        // Например, https://github.com/schmich/instascan или аналогичную
-        
-      } catch (error) {
-        console.error('Error starting QR scanner:', error);
-        alert('❌ Не удалось получить доступ к камере: ' + error.message);
-      }
-    }
-
-    function stopQRScanner() {
-      const video = document.getElementById('qr-video');
-      const startBtn = document.getElementById('start-scanner');
-      const stopBtn = document.getElementById('stop-scanner');
-      const resultDiv = document.getElementById('scanner-result');
-      
-      if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-        videoStream = null;
-      }
-      
-      video.style.display = 'none';
-      video.srcObject = null;
-      
-      startBtn.style.display = 'inline-block';
-      stopBtn.style.display = 'none';
-      
-      resultDiv.innerHTML = '<p style="color: #aaa;">Сканер остановлен</p>';
-      scannerActive = false;
-    }
-
-    // Функция для обработки отсканированного QR кода
-    function processQRCode(qrData) {
-      const resultDiv = document.getElementById('scanner-result');
-      
-      try {
-        // В реальном приложении QR код будет содержать данные пользователя
-        // Например: {"user_id": "uuid", "registration_id": "uuid"}
-        const data = JSON.parse(qrData);
-        
-        if (data.user_id && data.registration_id) {
-          resultDiv.innerHTML = `<p style="color: #4CAF50;">✅ QR код распознан</p>
-                                <p>Ищем запись пользователя...</p>`;
-          
-          // Здесь должна быть логика поиска записи и отметки посещения
-          // Например: checkInUser(data.registration_id, "Пользователь", "Мероприятие");
-          
-        } else {
-          resultDiv.innerHTML = '<p style="color: #f44336;">❌ Неверный формат QR кода</p>';
-        }
-      } catch (error) {
-        resultDiv.innerHTML = `<p style="color: #f44336;">❌ Ошибка обработки QR кода</p>
-                              <p>${error.message}</p>`;
-      }
-    }
-
-    // =============================================
-    //   ОСТАЛЬНЫЕ ФУНКЦИИ (оставляем без изменений)
-    // =============================================
+    // === Перенесенные функции из предыдущей версии ===
+    
+    // Создание мероприятия
     async function createEvent() {
-      const name   = document.getElementById('match_name')?.value?.trim();
-      const date   = document.getElementById('match_date')?.value;
-      const addr   = document.getElementById('bar_address')?.value?.trim();
-      const desc   = document.getElementById('description')?.value?.trim() || null;
-      const max    = parseInt(document.getElementById('max_participants')?.value) || null;
-      const open   = document.getElementById('is_open')?.checked ?? true;
+      const name = document.getElementById('match_name')?.value?.trim();
+      const date = document.getElementById('match_date')?.value;
+      const addr = document.getElementById('bar_address')?.value?.trim();
+      const desc = document.getElementById('description')?.value?.trim() || null;
+      const max = parseInt(document.getElementById('max_participants')?.value) || null;
+      const open = document.getElementById('is_open')?.checked ?? true;
 
       if (!name || !date || !addr) {
         alert('Заполните обязательные поля: название, дата и адрес');
@@ -1388,128 +1182,97 @@
         document.getElementById('description').value = '';
         document.getElementById('max_participants').value = '';
         
-        loadEvents();
+        loadAllEvents();
         loadStats();
         loadEventsForFilter();
       }
     }
 
-    async function loadEvents() {
-      const { data, error } = await supabaseClient
-        .from('events')
-        .select('*')
-        .order('match_date', { ascending: true });
-
-      const cont = document.getElementById('events-list');
-      
-      if (error) {
-        cont.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки мероприятий</p>';
-        return;
-      }
-      
-      if (!data?.length) {
-        cont.innerHTML = '<p>Мероприятий нет</p>';
-        return;
-      }
-
-      cont.innerHTML = '';
-      
-      data.forEach(ev => {
-        const eventDate = new Date(ev.match_date);
-        const formattedDate = eventDate.toLocaleDateString('ru-RU', {
-          weekday: 'short',
-          day: 'numeric',
-          month: 'short',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        
-        const d = document.createElement('div');
-        d.className = 'event-item';
-        d.innerHTML = `
-          <strong>${ev.match_name}</strong><br>
-          <small>📅 ${formattedDate}</small><br>
-          <small>📍 ${ev.bar_address}</small><br>
-          <small>👥 Макс: ${ev.max_participants || 'не ограничено'}</small><br>
-          <small>${ev.is_open ? '✅ Открыта запись' : '❌ Запись закрыта'}</small>
-          ${ev.description ? `<br><small>📝 ${ev.description}</small>` : ''}
-        `;
-        cont.appendChild(d);
-      });
-    }
-
+    // Загрузка заявок на Membership
     async function loadPending() {
-      const { data, error } = await supabaseClient
-        .from('users')
-        .select('id, full_name, username, email, created_at, points, telegram_id')
-        .eq('membership_status', 'pending')
-        .order('created_at', { ascending: true });
+      try {
+        const { data, error } = await supabaseClient
+          .from('users')
+          .select('id, full_name, username, email, created_at, points, telegram_id')
+          .eq('membership_status', 'pending')
+          .order('created_at', { ascending: true });
 
-      const cont = document.getElementById('pending-list');
-      
-      if (error) {
-        cont.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки заявок</p>';
-        return;
-      }
-      
-      if (!data?.length) {
-        cont.innerHTML = '<p>Заявок на членство нет</p>';
-        return;
-      }
+        const cont = document.getElementById('pending-list');
+        
+        if (error) {
+          cont.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки заявок</p>';
+          return;
+        }
+        
+        if (!data?.length) {
+          cont.innerHTML = '<p>Заявок на членство нет</p>';
+          return;
+        }
 
-      cont.innerHTML = '';
-      
-      data.forEach(user => {
-        const d = document.createElement('div');
-        d.className = 'pending-item';
-        d.innerHTML = `
-          <div class="user-info">
-            <div>
-              <strong>👤 ${user.full_name}</strong><br>
-              <small>Telegram: @${user.username || 'не указан'}</small><br>
-              <small>ID: ${user.id}</small>
+        cont.innerHTML = '';
+        
+        data.forEach(user => {
+          const d = document.createElement('div');
+          d.className = 'pending-item';
+          d.innerHTML = `
+            <div class="user-info">
+              <div>
+                <strong>👤 ${user.full_name}</strong><br>
+                <small>Telegram: @${user.username || 'не указан'}</small><br>
+                <small>ID: ${user.id.substring(0, 8)}...</small>
+              </div>
+              <div>
+                <small>📧 ${user.email || 'не указан'}</small><br>
+                <small>📅 ${new Date(user.created_at).toLocaleDateString('ru-RU')}</small><br>
+                <small>⭐ Очков: ${user.points || 0}</small>
+              </div>
             </div>
-            <div>
-              <small>📧 ${user.email || 'не указан'}</small><br>
-              <small>📅 ${new Date(user.created_at).toLocaleDateString('ru-RU')}</small><br>
-              <small>⭐ Очков: ${user.points || 0}</small>
+            <div class="action-buttons">
+              <button class="btn-approve" onclick="approveApplication('${user.id}')">
+                ✅ Одобрить (+100 очков)
+              </button>
+              <button class="btn-reject" onclick="rejectApplication('${user.id}')">
+                ❌ Отклонить
+              </button>
             </div>
-          </div>
-          <div class="action-buttons">
-            <button class="btn-approve" onclick="approveApplication('${user.id}')">
-              ✅ Одобрить (+100 очков)
-            </button>
-            <button class="btn-reject" onclick="rejectApplication('${user.id}')">
-              ❌ Отклонить
-            </button>
-          </div>
-        `;
-        cont.appendChild(d);
-      });
+          `;
+          cont.appendChild(d);
+        });
+      } catch (error) {
+        console.error('Error loading pending applications:', error);
+        document.getElementById('pending-list').innerHTML = '<p style="color: #ff6666;">Ошибка загрузки заявок</p>';
+      }
     }
 
+    // Загрузка всех пользователей
     async function loadAllUsers() {
-      const { data, error } = await supabaseClient
-        .from('users')
-        .select('id, full_name, username, email, points, membership_status, created_at')
-        .order('created_at', { ascending: false });
+      try {
+        const { data, error } = await supabaseClient
+          .from('users')
+          .select('id, full_name, username, email, points, membership_status, created_at')
+          .order('created_at', { ascending: false });
 
-      const cont = document.getElementById('all-users-list');
-      
-      if (error) {
-        cont.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки пользователей</p>';
-        return;
-      }
-      
-      if (!data?.length) {
-        cont.innerHTML = '<p>Пользователей нет</p>';
-        return;
-      }
+        const cont = document.getElementById('all-users-list');
+        
+        if (error) {
+          cont.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки пользователей</p>';
+          return;
+        }
+        
+        if (!data?.length) {
+          cont.innerHTML = '<p>Пользователей нет</p>';
+          return;
+        }
 
-      window.allUsers = data;
-      renderUsers(data);
+        window.allUsers = data;
+        renderUsers(data);
+      } catch (error) {
+        console.error('Error loading users:', error);
+        document.getElementById('all-users-list').innerHTML = '<p style="color: #ff6666;">Ошибка загрузки пользователей</p>';
+      }
     }
 
+    // Отображение пользователей
     function renderUsers(users) {
       const cont = document.getElementById('all-users-list');
       cont.innerHTML = '';
@@ -1540,13 +1303,14 @@
             </div>
           </div>
           <div style="margin-top: 10px; font-size: 0.8rem; color: #aaa;">
-            ID: ${user.id} • Рег: ${new Date(user.created_at).toLocaleDateString('ru-RU')}
+            ID: ${user.id.substring(0, 8)}... • Рег: ${new Date(user.created_at).toLocaleDateString('ru-RU')}
           </div>
         `;
         cont.appendChild(d);
       });
     }
 
+    // Поиск пользователей
     function searchUsers() {
       const searchTerm = document.getElementById('search-user').value.toLowerCase();
       if (!window.allUsers) return;
@@ -1561,6 +1325,7 @@
       renderUsers(filtered);
     }
 
+    // Одобрение заявки
     async function approveApplication(userId) {
       if (!confirm('Одобрить заявку и начислить 100 бонусных очков?')) return;
       
@@ -1599,6 +1364,7 @@
       }
     }
 
+    // Отклонение заявки
     async function rejectApplication(userId) {
       if (!confirm('Отклонить заявку на членство?')) return;
       
@@ -1625,6 +1391,7 @@
       }
     }
 
+    // Обновление пользователя
     async function updateUser() {
       const telegramIdInput = document.getElementById('user-id-input').value.trim();
       const addPoints = parseInt(document.getElementById('add-points').value) || 0;
@@ -1701,14 +1468,144 @@
       }
     }
 
+    // Функции для работы с записями
+    async function checkInUser(registrationId, userName, eventName) {
+      if (!confirm(`Отметить пользователя "${userName}" как посетившего мероприятие "${eventName}"?`)) {
+        return;
+      }
+      
+      try {
+        const { error: updateError } = await supabaseClient
+          .from('registrations')
+          .update({ 
+            status: 'checked_in',
+            checkin_time: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', registrationId);
 
-    // === Остальные функции без изменений ===
-    // ... (перенесите функции createEvent, loadPending, loadAllUsers, approveApplication, rejectApplication, updateUser и обработчики событий из предыдущей версии)
+        if (updateError) throw updateError;
+
+        const { data: registrationData } = await supabaseClient
+          .from('registrations')
+          .select('user_id')
+          .eq('id', registrationId)
+          .single();
+
+        if (registrationData) {
+          await supabaseClient
+            .from('users')
+            .update({
+              points: supabaseClient.sql`points + 50`,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', registrationData.user_id);
+        }
+
+        alert(`✅ Пользователь "${userName}" отмечен как посетивший мероприятие! +50 очков`);
+        loadRegistrations();
+        loadStats();
+        
+      } catch (error) {
+        console.error('Error checking in user:', error);
+        alert('❌ Ошибка при отметке посещения: ' + error.message);
+      }
+    }
+
+    async function cancelRegistration(registrationId, userName, eventName) {
+      if (!confirm(`Отменить запись пользователя "${userName}" на мероприятие "${eventName}"?`)) {
+        return;
+      }
+      
+      try {
+        const { error } = await supabaseClient
+          .from('registrations')
+          .update({ 
+            status: 'cancelled',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', registrationId);
+
+        if (error) throw error;
+
+        alert(`✅ Запись пользователя "${userName}" отменена`);
+        loadRegistrations();
+        loadStats();
+        
+      } catch (error) {
+        console.error('Error cancelling registration:', error);
+        alert('❌ Ошибка при отмене записи: ' + error.message);
+      }
+    }
+
+    async function reRegisterUser(registrationId, userName, eventName) {
+      if (!confirm(`Восстановить запись пользователя "${userName}" на мероприятие "${eventName}"?`)) {
+        return;
+      }
+      
+      try {
+        const { error } = await supabaseClient
+          .from('registrations')
+          .update({ 
+            status: 'registered',
+            checkin_time: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', registrationId);
+
+        if (error) throw error;
+
+        alert(`✅ Запись пользователя "${userName}" восстановлена`);
+        loadRegistrations();
+        loadStats();
+        
+      } catch (error) {
+        console.error('Error re-registering user:', error);
+        alert('❌ Ошибка при восстановлении записи: ' + error.message);
+      }
+    }
+
+    async function deleteRegistration(registrationId, userName, eventName) {
+      if (!confirm(`Удалить запись пользователя "${userName}" на мероприятие "${eventName}"? Это действие нельзя отменить.`)) {
+        return;
+      }
+      
+      try {
+        const { error } = await supabaseClient
+          .from('registrations')
+          .delete()
+          .eq('id', registrationId);
+
+        if (error) throw error;
+
+        alert(`✅ Запись пользователя "${userName}" удалена`);
+        loadRegistrations();
+        loadStats();
+        
+      } catch (error) {
+        console.error('Error deleting registration:', error);
+        alert('❌ Ошибка при удалении записи: ' + error.message);
+      }
+    }
 
     // === Инициализация ===
     document.addEventListener('DOMContentLoaded', () => {
       // Кнопка входа
       document.getElementById('login-button')?.addEventListener('click', tryLogin);
+
+      // Кнопки внутри админки
+      document.getElementById('create-event-button')?.addEventListener('click', createEvent);
+      document.getElementById('refresh-pending')?.addEventListener('click', loadPending);
+      document.getElementById('refresh-events')?.addEventListener('click', loadAllEvents);
+      document.getElementById('refresh-users')?.addEventListener('click', loadAllUsers);
+      document.getElementById('refresh-registrations')?.addEventListener('click', loadRegistrations);
+      document.getElementById('update-user-btn')?.addEventListener('click', updateUser);
+      document.getElementById('logout-button')?.addEventListener('click', logout);
+      
+      // Поиск и фильтры для записей
+      document.getElementById('search-registration')?.addEventListener('input', loadRegistrations);
+      document.getElementById('filter-event')?.addEventListener('change', loadRegistrations);
+      document.getElementById('filter-status')?.addEventListener('change', loadRegistrations);
 
       // Автовход при наличии сессии
       if (localStorage.getItem('adminLoggedIn') === 'true') {
@@ -1724,5 +1621,6 @@
       }
     });
   </script>
+
 </body>
 </html>
