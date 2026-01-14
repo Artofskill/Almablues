@@ -24,7 +24,7 @@
     }
     .container { max-width: 900px; margin: 0 auto; }
     .login-form, .admin-content { max-width: 500px; margin: 40px auto; }
-    input, textarea, button {
+    input, textarea, button, select {
       width: 100%;
       padding: 14px;
       margin: 10px 0;
@@ -42,18 +42,85 @@
       cursor: pointer;
     }
     button:hover { background: #E8B923; }
-    .section { margin: 40px 0; padding: 20px; background: rgba(3,70,148,0.15); border-radius: 12px; }
-    .event-list { margin-top: 20px; }
-    .event-item { background: #0a1a3a; padding: 12px; margin: 8px 0; border-radius: 8px; }
+    .section { 
+      margin: 40px 0; 
+      padding: 25px; 
+      background: rgba(3,70,148,0.15); 
+      border-radius: 12px; 
+      border: 1px solid rgba(3,70,148,0.3);
+    }
+    .event-list, .pending-list { margin-top: 20px; }
+    .event-item, .pending-item { 
+      background: #0a1a3a; 
+      padding: 15px; 
+      margin: 12px 0; 
+      border-radius: 8px;
+      border-left: 4px solid #034694;
+    }
+    .pending-item { border-left-color: #FFC107; }
+    .approved-item { border-left-color: #4CAF50; }
     .hidden { display: none !important; }
-    #status, #login-status { text-align: center; margin: 20px 0; font-size: 1.1rem; }
+    #status, #login-status { 
+      text-align: center; 
+      margin: 20px 0; 
+      font-size: 1.1rem; 
+    }
     #login-status { color: #ff6666; }
+    .user-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .user-info div {
+      background: rgba(255,255,255,0.05);
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .action-buttons button {
+      flex: 1;
+      padding: 10px;
+    }
+    .btn-approve {
+      background: #4CAF50;
+      color: white;
+    }
+    .btn-reject {
+      background: #f44336;
+      color: white;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: rgba(3,70,148,0.2);
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #D4A017;
+    }
+    .stat-label {
+      font-size: 0.9rem;
+      color: #aaa;
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>Admin Panel</h1>
+    <h1>Admin Panel • Chelsea FC KZ</h1>
 
     <div id="login-section" class="login-form">
       <h2>Вход для администратора</h2>
@@ -66,45 +133,93 @@
     <div id="admin-content" class="hidden">
       <div id="status">Загрузка данных...</div>
 
+      <!-- Статистика -->
+      <div class="stats" id="stats-section">
+        <div class="stat-card">
+          <div class="stat-number" id="total-users">0</div>
+          <div class="stat-label">Пользователей</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="pending-applications">0</div>
+          <div class="stat-label">Заявок на рассмотрении</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="approved-members">0</div>
+          <div class="stat-label">Подтвержденных членов</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="total-events">0</div>
+          <div class="stat-label">Мероприятий</div>
+        </div>
+      </div>
+
+      <!-- Создание мероприятия -->
       <div class="section">
         <h2>Создать мероприятие</h2>
         <input type="text" id="match_name" placeholder="Название матча (Chelsea vs Arsenal)">
         <input type="datetime-local" id="match_date">
         <input type="text" id="bar_address" placeholder="Адрес бара">
-        <textarea id="description" placeholder="Описание" rows="3"></textarea>
+        <textarea id="description" placeholder="Описание мероприятия" rows="3"></textarea>
         <input type="number" id="max_participants" placeholder="Макс. участников (опционально)">
         <label style="display:block; margin:10px 0;">
           <input type="checkbox" id="is_open" checked> Открыта запись
         </label>
-        <button id="create-event-button">Создать</button>
+        <button id="create-event-button">Создать мероприятие</button>
       </div>
 
+      <!-- Заявки на Membership -->
       <div class="section">
-        <h2>Заявки на Membership</h2>
-        <div id="pending-list">Загрузка...</div>
-        <button id="refresh-pending">Обновить список</button>
+        <h2>📋 Заявки на Membership</h2>
+        <div id="pending-list" class="pending-list">Загрузка...</div>
+        <button id="refresh-pending" class="btn">🔄 Обновить список</button>
       </div>
 
+      <!-- Все пользователи -->
       <div class="section">
-        <h2>Календарь мероприятий</h2>
+        <h2>👥 Все пользователи</h2>
+        <div style="margin-bottom: 15px;">
+          <input type="text" id="search-user" placeholder="Поиск по имени или username" onkeyup="searchUsers()">
+        </div>
+        <div id="all-users-list" class="pending-list">Загрузка...</div>
+        <button id="refresh-users" class="btn">🔄 Обновить список пользователей</button>
+      </div>
+
+      <!-- Календарь мероприятий -->
+      <div class="section">
+        <h2>📅 Календарь мероприятий</h2>
         <div id="events-list" class="event-list">Загрузка...</div>
-        <button id="refresh-events">Обновить календарь</button>
+        <button id="refresh-events" class="btn">🔄 Обновить календарь</button>
       </div>
 
-      <button id="logout-button" style="background:#c00; margin-top:40px; width:100%;">Выйти</button>
+      <!-- Управление пользователем -->
+      <div class="section">
+        <h2>⚙️ Управление пользователем</h2>
+        <input type="text" id="user-id-input" placeholder="ID пользователя">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <input type="number" id="add-points" placeholder="Добавить очки">
+          <input type="number" id="remove-points" placeholder="Убрать очки">
+        </div>
+        <select id="user-status-select">
+          <option value="">Выберите статус</option>
+          <option value="New">New - Новый</option>
+          <option value="pending">pending - На рассмотрении</option>
+          <option value="approved">approved - Подтвержден</option>
+          <option value="rejected">rejected - Отклонен</option>
+        </select>
+        <button id="update-user-btn" class="btn">Обновить пользователя</button>
+      </div>
+
+      <button id="logout-button" style="background:#c00; margin-top:40px; width:100%;">Выйти из админ-панели</button>
     </div>
   </div>
 
   <script>
     // =============================================
-    //   ИНИЦИАЛИЗАЦИЯ SUPABASE (только один раз!)
+    //   ИНИЦИАЛИЗАЦИЯ SUPABASE
     // =============================================
     const supabaseUrl  = 'https://zuapiixwzkleygaijulx.supabase.co';
     const supabaseKey  = 'sb_publishable_Jsth-2GViNz5Ev3UWtrWTg_fbg4GAKx';
-      const supabaseClient = supabase.createClient(
-    supabaseUrl,
-    supabaseKey
-  );
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
     const ADMIN_LOGIN = 'Admin';
     const ADMIN_PASS  = '44mnUr8Xz';
@@ -137,8 +252,10 @@
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('admin-content').classList.remove('hidden');
         showMsg('status', 'Добро пожаловать в админ-панель');
+        loadStats();
         loadEvents();
         loadPending();
+        loadAllUsers();
       } else {
         showMsg('login-status', 'Неверный логин или пароль', true);
       }
@@ -147,6 +264,43 @@
     function logout() {
       localStorage.removeItem('adminLoggedIn');
       location.reload();
+    }
+
+    // =============================================
+    //   СТАТИСТИКА
+    // =============================================
+    async function loadStats() {
+      try {
+        // Общее количество пользователей
+        const { count: totalUsers } = await supabaseClient
+          .from('users')
+          .select('*', { count: 'exact', head: true });
+        
+        // Заявки на рассмотрении
+        const { count: pendingApps } = await supabaseClient
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .eq('membership_status', 'pending');
+        
+        // Подтвержденные члены
+        const { count: approvedMembers } = await supabaseClient
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .eq('membership_status', 'approved');
+        
+        // Общее количество мероприятий
+        const { count: totalEvents } = await supabaseClient
+          .from('events')
+          .select('*', { count: 'exact', head: true });
+        
+        document.getElementById('total-users').textContent = totalUsers || 0;
+        document.getElementById('pending-applications').textContent = pendingApps || 0;
+        document.getElementById('approved-members').textContent = approvedMembers || 0;
+        document.getElementById('total-events').textContent = totalEvents || 0;
+        
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
     }
 
     // =============================================
@@ -161,7 +315,7 @@
       const open   = document.getElementById('is_open')?.checked ?? true;
 
       if (!name || !date || !addr) {
-        alert('Заполните обязательные поля');
+        alert('Заполните обязательные поля: название, дата и адрес');
         return;
       }
 
@@ -177,8 +331,15 @@
       if (error) {
         alert('Ошибка: ' + error.message);
       } else {
-        alert('Создано');
+        alert('✅ Мероприятие успешно создано!');
+        document.getElementById('match_name').value = '';
+        document.getElementById('match_date').value = '';
+        document.getElementById('bar_address').value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('max_participants').value = '';
+        
         loadEvents();
+        loadStats();
       }
     }
 
@@ -192,18 +353,38 @@
         .order('match_date', { ascending: true });
 
       const cont = document.getElementById('events-list');
-      cont.innerHTML = error ? '<p>Ошибка загрузки</p>' :
-                       !data?.length ? '<p>Мероприятий нет</p>' : '';
+      
+      if (error) {
+        cont.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки мероприятий</p>';
+        return;
+      }
+      
+      if (!data?.length) {
+        cont.innerHTML = '<p>Мероприятий нет</p>';
+        return;
+      }
 
-      if (error || !data?.length) return;
-
+      cont.innerHTML = '';
+      
       data.forEach(ev => {
+        const eventDate = new Date(ev.match_date);
+        const formattedDate = eventDate.toLocaleDateString('ru-RU', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
         const d = document.createElement('div');
         d.className = 'event-item';
         d.innerHTML = `
           <strong>${ev.match_name}</strong><br>
-          ${new Date(ev.match_date).toLocaleString('ru-RU')}<br>
-          ${ev.bar_address} • ${ev.is_open ? 'Открыто' : 'Закрыто'}
+          <small>📅 ${formattedDate}</small><br>
+          <small>📍 ${ev.bar_address}</small><br>
+          <small>👥 Макс: ${ev.max_participants || 'не ограничено'}</small><br>
+          <small>${ev.is_open ? '✅ Открыта запись' : '❌ Запись закрыта'}</small>
+          ${ev.description ? `<br><small>📝 ${ev.description}</small>` : ''}
         `;
         cont.appendChild(d);
       });
@@ -215,38 +396,233 @@
     async function loadPending() {
       const { data, error } = await supabaseClient
         .from('users')
-        .select('id, full_name, username')
-        .eq('membership_status', 'pending');
+        .select('id, full_name, username, email, created_at, points, telegram_id')
+        .eq('membership_status', 'pending')
+        .order('created_at', { ascending: true });
 
       const cont = document.getElementById('pending-list');
-      cont.innerHTML = error ? '<p>Ошибка</p>' :
-                       !data?.length ? '<p>Заявок нет</p>' : '';
+      
+      if (error) {
+        cont.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки заявок</p>';
+        return;
+      }
+      
+      if (!data?.length) {
+        cont.innerHTML = '<p>Заявок на членство нет</p>';
+        return;
+      }
 
-      if (error || !data?.length) return;
-
-      data.forEach(u => {
+      cont.innerHTML = '';
+      
+      data.forEach(user => {
         const d = document.createElement('div');
-        d.className = 'event-item';
+        d.className = 'pending-item';
         d.innerHTML = `
-          ${u.full_name} (@${u.username || 'нет'})<br>
-          <button onclick="changeStatus('${u.id}', 'approved')">Одобрить</button>
-          <button onclick="changeStatus('${u.id}', 'rejected')" style="background:#c00;">Отклонить</button>
+          <div class="user-info">
+            <div>
+              <strong>👤 ${user.full_name}</strong><br>
+              <small>Telegram: @${user.username || 'не указан'}</small><br>
+              <small>ID: ${user.id}</small>
+            </div>
+            <div>
+              <small>📧 ${user.email || 'не указан'}</small><br>
+              <small>📅 ${new Date(user.created_at).toLocaleDateString('ru-RU')}</small><br>
+              <small>⭐ Очков: ${user.points || 0}</small>
+            </div>
+          </div>
+          <div class="action-buttons">
+            <button class="btn-approve" onclick="changeStatus('${user.id}', 'approved')">
+              ✅ Одобрить (+100 очков)
+            </button>
+            <button class="btn-reject" onclick="changeStatus('${user.id}', 'rejected')">
+              ❌ Отклонить
+            </button>
+          </div>
         `;
         cont.appendChild(d);
       });
     }
 
-    async function changeStatus(id, status) {
-      if (!confirm(`Установить статус "${status}"?`)) return;
-      const { error } = await supabaseClient
+    // =============================================
+    //   ВСЕ ПОЛЬЗОВАТЕЛИ
+    // =============================================
+    async function loadAllUsers() {
+      const { data, error } = await supabaseClient
         .from('users')
-        .update({ membership_status: status })
-        .eq('id', id);
+        .select('id, full_name, username, email, points, membership_status, created_at')
+        .order('created_at', { ascending: false });
 
-      if (error) alert('Ошибка: ' + error.message);
-      else {
-        alert('Обновлено');
+      const cont = document.getElementById('all-users-list');
+      
+      if (error) {
+        cont.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки пользователей</p>';
+        return;
+      }
+      
+      if (!data?.length) {
+        cont.innerHTML = '<p>Пользователей нет</p>';
+        return;
+      }
+
+      window.allUsers = data; // Сохраняем для поиска
+      renderUsers(data);
+    }
+
+    function renderUsers(users) {
+      const cont = document.getElementById('all-users-list');
+      cont.innerHTML = '';
+      
+      users.forEach(user => {
+        const statusColor = {
+          'New': '#2196F3',
+          'pending': '#FFC107',
+          'approved': '#4CAF50',
+          'rejected': '#F44336'
+        }[user.membership_status] || '#9E9E9E';
+        
+        const d = document.createElement('div');
+        d.className = 'event-item';
+        d.style.borderLeftColor = statusColor;
+        d.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
+              <strong>${user.full_name}</strong><br>
+              <small>@${user.username || 'нет'}</small><br>
+              <small>${user.email || 'нет email'}</small>
+            </div>
+            <div style="text-align: right;">
+              <span style="background: ${statusColor}; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;">
+                ${user.membership_status}
+              </span><br>
+              <strong>⭐ ${user.points || 0}</strong>
+            </div>
+          </div>
+          <div style="margin-top: 10px; font-size: 0.8rem; color: #aaa;">
+            ID: ${user.id} • Рег: ${new Date(user.created_at).toLocaleDateString('ru-RU')}
+          </div>
+        `;
+        cont.appendChild(d);
+      });
+    }
+
+    function searchUsers() {
+      const searchTerm = document.getElementById('search-user').value.toLowerCase();
+      if (!window.allUsers) return;
+      
+      const filtered = window.allUsers.filter(user => 
+        user.full_name?.toLowerCase().includes(searchTerm) ||
+        user.username?.toLowerCase().includes(searchTerm) ||
+        user.email?.toLowerCase().includes(searchTerm) ||
+        user.id?.toLowerCase().includes(searchTerm)
+      );
+      
+      renderUsers(filtered);
+    }
+
+    // =============================================
+    //   ИЗМЕНЕНИЕ СТАТУСА ЗАЯВКИ
+    // =============================================
+    async function changeStatus(userId, status) {
+      const action = status === 'approved' ? 'одобрить' : 'отклонить';
+      const message = status === 'approved' 
+        ? 'Одобрить заявку и начислить 100 бонусных очков?'
+        : 'Отклонить заявку на членство?';
+      
+      if (!confirm(message)) return;
+      
+      try {
+        // Обновляем статус
+        const { error } = await supabaseClient
+          .from('users')
+          .update({ 
+            membership_status: status,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId);
+
+        if (error) throw error;
+        
+        // Начисляем бонусные очки при одобрении
+        if (status === 'approved') {
+          await supabaseClient
+            .from('users')
+            .update({ 
+              points: supabaseClient.sql`points + 100`
+            })
+            .eq('id', userId);
+        }
+        
+        alert(`✅ Заявка успешно ${status === 'approved' ? 'одобрена' : 'отклонена'}!`);
+        
+        // Обновляем все списки
         loadPending();
+        loadAllUsers();
+        loadStats();
+        
+      } catch (error) {
+        alert('❌ Ошибка: ' + error.message);
+      }
+    }
+
+    // =============================================
+    //   УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЕМ
+    // =============================================
+    async function updateUser() {
+      const userId = document.getElementById('user-id-input').value.trim();
+      const addPoints = parseInt(document.getElementById('add-points').value) || 0;
+      const removePoints = parseInt(document.getElementById('remove-points').value) || 0;
+      const newStatus = document.getElementById('user-status-select').value;
+      
+      if (!userId) {
+        alert('Введите ID пользователя');
+        return;
+      }
+      
+      if (!addPoints && !removePoints && !newStatus) {
+        alert('Укажите что изменить: очки или статус');
+        return;
+      }
+      
+      try {
+        const updates = {};
+        
+        // Обновляем очки
+        if (addPoints > 0) {
+          updates.points = supabaseClient.sql`points + ${addPoints}`;
+        }
+        if (removePoints > 0) {
+          updates.points = supabaseClient.sql`points - ${removePoints}`;
+        }
+        
+        // Обновляем статус
+        if (newStatus) {
+          updates.membership_status = newStatus;
+        }
+        
+        updates.updated_at = new Date().toISOString();
+        
+        const { error } = await supabaseClient
+          .from('users')
+          .update(updates)
+          .eq('id', userId);
+        
+        if (error) throw error;
+        
+        alert('✅ Пользователь успешно обновлен!');
+        
+        // Очищаем поля
+        document.getElementById('user-id-input').value = '';
+        document.getElementById('add-points').value = '';
+        document.getElementById('remove-points').value = '';
+        document.getElementById('user-status-select').value = '';
+        
+        // Обновляем списки
+        loadPending();
+        loadAllUsers();
+        loadStats();
+        
+      } catch (error) {
+        alert('❌ Ошибка: ' + error.message);
       }
     }
 
@@ -261,15 +637,19 @@
       document.getElementById('create-event-button')?.addEventListener('click', createEvent);
       document.getElementById('refresh-pending')?.addEventListener('click', loadPending);
       document.getElementById('refresh-events')?.addEventListener('click', loadEvents);
+      document.getElementById('refresh-users')?.addEventListener('click', loadAllUsers);
+      document.getElementById('update-user-btn')?.addEventListener('click', updateUser);
       document.getElementById('logout-button')?.addEventListener('click', logout);
 
       // Автовход при наличии сессии
       if (localStorage.getItem('adminLoggedIn') === 'true') {
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('admin-content').classList.remove('hidden');
-        showMsg('status', 'Автовход выполнен');
+        showMsg('status', '✅ Автовход выполнен');
+        loadStats();
         loadEvents();
         loadPending();
+        loadAllUsers();
       }
     });
   </script>
