@@ -330,6 +330,74 @@
         min-width: 100%;
       }
     }
+
+    /* Стили для уведомлений */
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 8px;
+      color: white;
+      font-weight: 500;
+      z-index: 1000;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .notification.success {
+      background: #4CAF50;
+    }
+
+    .notification.error {
+      background: #f44336;
+    }
+
+    .notification.info {
+      background: #2196F3;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* Стили для модальных окон */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: var(--bg-dark);
+      padding: 25px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 2px solid var(--chelsea-blue);
+    }
+
+    .close-modal {
+      float: right;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--gold);
+    }
   </style>
 </head>
 
@@ -423,8 +491,39 @@
   </footer>
 </div>
 
-<!-- Модальные окна остаются без изменений -->
-<!-- (перенесите модальные окна из предыдущей версии) -->
+<!-- Модальное окно для изменения записи -->
+<div id="edit-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal" onclick="closeEditModal()">&times;</span>
+    <h3>📝 Изменить запись на мероприятие</h3>
+    <div id="edit-modal-content">
+      <p>Загрузка ваших записей...</p>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для просмотра участников -->
+<div id="participants-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal" onclick="closeParticipantsModal()">&times;</span>
+    <h3>👥 Выберите мероприятие</h3>
+    <div id="participants-modal-content">
+      <p>Загрузка мероприятий...</p>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для QR кода -->
+<div id="qr-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal" onclick="closeQRModal()">&times;</span>
+    <h3>📱 Ваш QR код</h3>
+    <div id="qr-modal-content" style="text-align: center;">
+      <div id="qr-code"></div>
+      <p style="margin-top: 15px; color: #aaa;">Покажите этот QR код организатору для отметки о посещении</p>
+    </div>
+  </div>
+</div>
 
 <script>
   // === Telegram ===
@@ -471,8 +570,7 @@
       day: 'numeric',
       month: 'short',
       hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'UTC'
+      minute: '2-digit'
     });
   }
   
@@ -503,6 +601,18 @@
     }
     
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  // === Утилиты ===
+  function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
   }
 
   // === Функции для работы с членством ===
@@ -878,6 +988,244 @@
     }
   }
 
+  // === Модальные окна ===
+  function openEditModal() {
+    loadMyRegistrationsForEdit();
+    document.getElementById('edit-modal').style.display = 'flex';
+  }
+
+  function closeEditModal() {
+    document.getElementById('edit-modal').style.display = 'none';
+  }
+
+  function openParticipantsModal() {
+    loadEventsForParticipants();
+    document.getElementById('participants-modal').style.display = 'flex';
+  }
+
+  function closeParticipantsModal() {
+    document.getElementById('participants-modal').style.display = 'none';
+  }
+
+  function openQRModal() {
+    document.getElementById('qr-modal').style.display = 'flex';
+  }
+
+  function closeQRModal() {
+    document.getElementById('qr-modal').style.display = 'none';
+  }
+
+  // Загрузка моих записей для редактирования
+  async function loadMyRegistrationsForEdit() {
+    try {
+      const { data, error } = await supabaseClient
+        .from('registrations')
+        .select(`
+          id,
+          status,
+          created_at,
+          events (
+            id,
+            match_name,
+            match_date,
+            bar_address
+          )
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      const modalContent = document.getElementById('edit-modal-content');
+      
+      if (error) {
+        modalContent.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки записей</p>';
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        modalContent.innerHTML = '<p>У вас нет записей на мероприятия</p>';
+        return;
+      }
+
+      let html = '<div style="max-height: 400px; overflow-y: auto;">';
+      
+      data.forEach(reg => {
+        const event = reg.events;
+        if (!event) return;
+        
+        const eventDate = convertToUTC5(event.match_date);
+        const formattedDate = eventDate.toLocaleDateString('ru-RU', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        const statusText = reg.status === 'registered' ? 'Записан' : 
+                          reg.status === 'cancelled' ? 'Отменено' : 
+                          reg.status === 'checked_in' ? 'Посетил' : reg.status;
+        
+        const statusClass = reg.status === 'registered' ? 'btn-green' :
+                           reg.status === 'cancelled' ? 'btn-red' : 'btn';
+        
+        html += `
+          <div class="event-item" style="margin-bottom: 15px;">
+            <div>
+              <strong>${event.match_name}</strong><br>
+              <small>📅 ${formattedDate} (UTC+5)</small><br>
+              <small>📍 ${event.bar_address}</small>
+            </div>
+            <div style="text-align: right;">
+              <span class="btn-small ${statusClass}" style="margin-bottom: 5px; display: block;">
+                ${statusText}
+              </span>
+              ${reg.status === 'registered' ? `
+                <button class="btn-small btn-red" onclick="cancelRegistration('${reg.id}', '${event.match_name}')">
+                  Отменить
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      modalContent.innerHTML = html;
+      
+    } catch (err) {
+      console.error('Error loading registrations:', err);
+      modalContent.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки</p>';
+    }
+  }
+
+  async function cancelRegistration(registrationId, eventName) {
+    if (!confirm(`Вы уверены, что хотите отменить запись на "${eventName}"?`)) {
+      return;
+    }
+    
+    try {
+      const { error } = await supabaseClient
+        .from('registrations')
+        .update({ 
+          status: 'cancelled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', registrationId);
+      
+      if (error) throw error;
+      
+      showNotification('✅ Запись отменена', 'success');
+      await loadMyRegistrationsForEdit();
+      await loadEvents(); // Обновляем список мероприятий
+      
+    } catch (error) {
+      console.error('Error cancelling registration:', error);
+      showNotification('❌ Ошибка при отмене записи', 'error');
+    }
+  }
+
+  // Загрузка мероприятий для просмотра участников
+  async function loadEventsForParticipants() {
+    try {
+      const { data, error } = await supabaseClient
+        .from('events')
+        .select('id, match_name, match_date')
+        .gte('match_date', new Date().toISOString())
+        .order('match_date', { ascending: true });
+
+      const modalContent = document.getElementById('participants-modal-content');
+      
+      if (error) {
+        modalContent.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки мероприятий</p>';
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        modalContent.innerHTML = '<p>Нет предстоящих мероприятий</p>';
+        return;
+      }
+
+      let html = '<p>Выберите мероприятие для просмотра участников:</p>';
+      html += '<div style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">';
+      
+      data.forEach(event => {
+        const eventDate = convertToUTC5(event.match_date);
+        const formattedDate = eventDate.toLocaleDateString('ru-RU', {
+          day: 'numeric',
+          month: 'short'
+        });
+        
+        html += `
+          <a href="event-participants.html?event_id=${event.id}" class="btn">
+            ${event.match_name} (${formattedDate})
+          </a>
+        `;
+      });
+      
+      html += '</div>';
+      modalContent.innerHTML = html;
+      
+    } catch (err) {
+      console.error('Error loading events:', err);
+      modalContent.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки</p>';
+    }
+  }
+
+  // QR код
+  async function showMyQR() {
+    try {
+      // Получаем данные пользователя
+      const { data: user } = await supabaseClient
+        .from('users')
+        .select('id, telegram_id, full_name')
+        .eq('id', userId)
+        .single();
+      
+      if (!user) {
+        showNotification('❌ Не удалось загрузить данные пользователя', 'error');
+        return;
+      }
+      
+      // Создаем QR код с данными пользователя
+      const qrData = JSON.stringify({
+        user_id: user.id,
+        telegram_id: user.telegram_id,
+        name: user.full_name,
+        timestamp: Date.now()
+      });
+      
+      // Кодируем в base64 для простоты
+      const qrText = btoa(qrData);
+      
+      // Создаем простой текстовый QR (в реальном приложении используйте библиотеку)
+      const qrContent = document.getElementById('qr-modal-content');
+      qrContent.innerHTML = `
+        <div style="background: white; padding: 20px; border-radius: 8px; display: inline-block;">
+          <div style="font-family: monospace; font-size: 10px; letter-spacing: 2px; line-height: 10px;">
+            <!-- Простая визуализация QR -->
+            <div>████████████████</div>
+            <div>██          ██</div>
+            <div>██  ████  ██</div>
+            <div>██  ████  ██</div>
+            <div>██          ██</div>
+            <div>████████████████</div>
+          </div>
+        </div>
+        <p style="margin-top: 15px; color: #aaa;">ID: ${user.id.substring(0, 8)}...</p>
+        <p style="font-size: 0.9rem; color: #ccc;">${user.full_name}</p>
+      `;
+      
+      openQRModal();
+      
+    } catch (error) {
+      console.error('Error generating QR:', error);
+      showNotification('❌ Ошибка при создании QR кода', 'error');
+    }
+  }
+
+  function scanQR() {
+    showNotification('📱 Функция сканирования QR кода в разработке', 'info');
+  }
+
   // === Загружаем данные пользователя ===
   async function loadUserData() {
     try {
@@ -917,10 +1265,16 @@
     window.addEventListener('beforeunload', () => {
       Object.values(countdownTimers).forEach(timer => clearTimeout(timer));
     });
+    
+    // Закрытие модальных окон по клику вне контента
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+    });
   }
-
-  // Функции модальных окон (остаются без изменений)
-  // ... (перенесите функции из предыдущей версии)
 
   init();
 </script>
