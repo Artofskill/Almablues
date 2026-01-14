@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Мои записи — Chelsea FC KZ</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg-dark: #001028;
+      --chelsea-blue: #034694;
+      --chelsea-blue-dark: #002366;
+      --gold: #D4A017;
+      --gold-hover: #E8B923;
+      --text-light: #e0e0e0;
+      --white: #ffffff;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-light);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-family: 'Oswald', sans-serif;
+      color: var(--gold);
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: var(--gold);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 1.1rem;
+    }
+
+    .back-btn:hover {
+      text-decoration: underline;
+    }
+
+    .registrations-list {
+      margin-top: 20px;
+    }
+
+    .registration-item {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border-left: 4px solid #034694;
+    }
+
+    .registration-item.cancelled {
+      border-left-color: #f44336;
+      opacity: 0.7;
+    }
+
+    .registration-item.checked_in {
+      border-left-color: #4CAF50;
+    }
+
+    .event-name {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.2rem;
+      color: var(--white);
+      margin-bottom: 5px;
+    }
+
+    .event-details {
+      color: #aaa;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+
+    .registration-status {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+
+    .status-registered {
+      background: rgba(33, 150, 243, 0.2);
+      color: #2196F3;
+      border: 1px solid #2196F3;
+    }
+
+    .status-cancelled {
+      background: rgba(244, 67, 54, 0.2);
+      color: #F44336;
+      border: 1px solid #F44336;
+    }
+
+    .status-checked_in {
+      background: rgba(76, 175, 80, 0.2);
+      color: #4CAF50;
+      border: 1px solid #4CAF50;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background: var(--chelsea-blue);
+      color: var(--white);
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      margin-right: 10px;
+      margin-top: 5px;
+    }
+
+    .btn:hover {
+      background: var(--chelsea-blue-dark);
+    }
+
+    .btn-red {
+      background: #f44336;
+    }
+
+    .btn-red:hover {
+      background: #d32f2f;
+    }
+
+    .btn-disabled {
+      background: #666;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    .btn-disabled:hover {
+      background: #666;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #aaa;
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--gold);
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: #777;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <a href="dashboard.html" class="back-btn">← Назад в Dashboard</a>
+  
+  <header>
+    <h1>🎫 Мои записи</h1>
+    <p>Все мероприятия, на которые вы записались</p>
+  </header>
+
+  <div id="loading" class="loading">Загрузка ваших записей...</div>
+  
+  <div id="registrations-list" class="registrations-list" style="display: none;">
+    <!-- Записи будут загружены здесь -->
+  </div>
+
+  <footer>
+    <p>Chelsea FC Supporters Club Kazakhstan • 2025</p>
+  </footer>
+</div>
+
+<script>
+  // === Telegram ===
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+
+  // === Supabase ===
+  const supabaseUrl = 'https://zuapiixwzkleygaijulx.supabase.co';
+  const supabaseKey = 'sb_publishable_Jsth-2GViNz5Ev3UWtrWTg_fbg4GAKx';
+
+  const supabaseClient = supabase.createClient(
+    supabaseUrl,
+    supabaseKey
+  );
+
+  const userId = localStorage.getItem('userId');
+
+  if (!userId) {
+    alert('Сессия истекла. Пожалуйста, вернитесь на главную страницу.');
+    location.href = 'index.html';
+  }
+
+  // Загружаем записи пользователя
+  async function loadMyRegistrations() {
+    try {
+      const { data, error } = await supabaseClient
+        .from('registrations')
+        .select(`
+          id,
+          status,
+          checkin_time,
+          created_at,
+          events (
+            id,
+            match_name,
+            match_date,
+            bar_address,
+            description
+          )
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      const loadingEl = document.getElementById('loading');
+      const listEl = document.getElementById('registrations-list');
+      
+      if (error) {
+        loadingEl.innerHTML = '<p style="color: #ff6666;">Ошибка загрузки записей</p>';
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        loadingEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <h3>Записей нет</h3>
+            <p>Вы еще не записались ни на одно мероприятие</p>
+            <a href="dashboard.html" class="btn" style="margin-top: 20px;">Посмотреть мероприятия</a>
+          </div>
+        `;
+        return;
+      }
+
+      // Скрываем loading, показываем список
+      loadingEl.style.display = 'none';
+      listEl.style.display = 'block';
+      
+      // Группируем записи по статусу
+      const upcoming = [];
+      const past = [];
+      const cancelled = [];
+      
+      data.forEach(reg => {
+        if (!reg.events) return;
+        
+        const eventDate = new Date(reg.events.match_date);
+        const now = new Date();
+        
+        if (reg.status === 'cancelled') {
+          cancelled.push({ reg, eventDate });
+        } else if (eventDate < now) {
+          past.push({ reg, eventDate });
+        } else {
+          upcoming.push({ reg, eventDate });
+        }
+      });
+      
+      // Сортируем по дате
+      upcoming.sort((a, b) => a.eventDate - b.eventDate);
+      past.sort((a, b) => b.eventDate - a.eventDate);
+      cancelled.sort((a, b) => b.eventDate - a.eventDate);
+      
+      let html = '';
+      
+      // Предстоящие мероприятия
+      if (upcoming.length > 0) {
+        html += '<h3 style="margin: 20px 0 10px; color: var(--gold);">Предстоящие</h3>';
+        upcoming.forEach(({ reg, eventDate }) => {
+          html += createRegistrationCard(reg, eventDate);
+        });
+      }
+      
+      // Прошедшие мероприятия
+      if (past.length > 0) {
+        html += '<h3 style="margin: 20px 0 10px; color: #aaa;">Прошедшие</h3>';
+        past.forEach(({ reg, eventDate }) => {
+          html += createRegistrationCard(reg, eventDate, true);
+        });
+      }
+      
+      // Отмененные записи
+      if (cancelled.length > 0) {
+        html += '<h3 style="margin: 20px 0 10px; color: #f44336;">Отмененные</h3>';
+        cancelled.forEach(({ reg, eventDate }) => {
+          html += createRegistrationCard(reg, eventDate, true);
+        });
+      }
+      
+      listEl.innerHTML = html;
+      
+    } catch (err) {
+      console.error('Error loading registrations:', err);
+      document.getElementById('loading').innerHTML = '<p style="color: #ff6666;">Неожиданная ошибка при загрузке</p>';
+    }
+  }
+
+  function createRegistrationCard(reg, eventDate, isPast = false) {
+    const event = reg.events;
+    const formattedDate = eventDate.toLocaleDateString('ru-RU', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    const statusText = reg.status === 'registered' ? 'Записан' : 
+                      reg.status === 'cancelled' ? 'Отменено' : 
+                      reg.status === 'checked_in' ? 'Посетил' : reg.status;
+    
+    const statusClass = reg.status === 'registered' ? 'status-registered' :
+                       reg.status === 'cancelled' ? 'status-cancelled' :
+                       'status-checked_in';
+    
+    const itemClass = reg.status === 'cancelled' ? 'registration-item cancelled' : 
+                     reg.status === 'checked_in' ? 'registration-item checked_in' : 
+                     'registration-item';
+    
+    let buttons = '';
+    if (reg.status === 'registered' && !isPast) {
+      buttons = `
+        <button class="btn btn-red" onclick="cancelRegistration('${reg.id}', '${event.match_name}')">
+          Отменить запись
+        </button>
+        <a href="event-participants.html?event_id=${event.id}" class="btn">
+          Участники
+        </a>
+      `;
+    } else if (reg.status === 'checked_in') {
+      buttons = `
+        <span class="btn btn-disabled">✓ Посещено</span>
+        ${reg.checkin_time ? `<small style="color: #4CAF50;">Отмечен: ${new Date(reg.checkin_time).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}</small>` : ''}
+      `;
+    }
+    
+    return `
+      <div class="${itemClass}">
+        <div class="event-name">${event.match_name}</div>
+        <div class="event-details">
+          📅 ${formattedDate}<br>
+          📍 ${event.bar_address}
+          ${event.description ? `<br>📝 ${event.description}` : ''}
+        </div>
+        <div class="registration-status ${statusClass}">${statusText}</div>
+        <div>
+          ${buttons}
+        </div>
+      </div>
+    `;
+  }
+
+  async function cancelRegistration(registrationId, eventName) {
+    if (!confirm(`Вы уверены, что хотите отменить запись на "${eventName}"?`)) {
+      return;
+    }
+    
+    try {
+      const { error } = await supabaseClient
+        .from('registrations')
+        .update({ 
+          status: 'cancelled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', registrationId);
+      
+      if (error) throw error;
+      
+      alert('✅ Запись отменена');
+      loadMyRegistrations(); // Перезагружаем список
+      
+    } catch (error) {
+      console.error('Error cancelling registration:', error);
+      alert('❌ Ошибка при отмене записи');
+    }
+  }
+
+  // Инициализация
+  loadMyRegistrations();
+</script>
+</body>
+</html>
