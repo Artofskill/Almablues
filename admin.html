@@ -51,6 +51,23 @@
     h2 {
       font-size: 1.4rem;
       margin-bottom: 1rem;
+      cursor: pointer;
+      position: relative;
+      padding-right: 30px;
+    }
+
+    h2::after {
+      content: '▼';
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.8rem;
+      transition: transform 0.3s ease;
+    }
+
+    h2.collapsed::after {
+      transform: translateY(-50%) rotate(-90deg);
     }
 
     .container {
@@ -107,6 +124,19 @@
       border-radius: 12px;
       border: 1px solid rgba(3,70,148,0.3);
       word-break: break-word;
+    }
+
+    .section-content {
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      max-height: 5000px;
+      opacity: 1;
+    }
+
+    .section-content.collapsed {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
     }
 
     .event-list, .pending-list, .registrations-list {
@@ -535,133 +565,146 @@
       <div id="login-status"></div>
     </div>
 
+    <!-- ВСЯ АДМИН-ПАНЕЛЬ ТЕПЕРЬ СКРЫТА ДО АВТОРИЗАЦИИ -->
     <div id="admin-content" class="hidden">
       <div id="status">Загрузка данных...</div>
 
-      <!-- Статистика -->
-      <div class="stats" id="stats-section">
-        <div class="stat-card">
-          <div class="stat-number" id="total-users">0</div>
-          <div class="stat-label">Пользователей</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="total-events">0</div>
-          <div class="stat-label">Мероприятий</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="total-registrations">0</div>
-          <div class="stat-label">Всего записей</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="active-registrations">0</div>
-          <div class="stat-label">Активных записей</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="checked-in-count">0</div>
-          <div class="stat-label">Отметившихся</div>
+      <!-- Статистика (оставляем всегда открытой) -->
+      <div class="section">
+        <h2>📊 Статистика</h2>
+        <div class="section-content">
+          <div class="stats" id="stats-section">
+            <div class="stat-card">
+              <div class="stat-number" id="total-users">0</div>
+              <div class="stat-label">Пользователей</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="total-events">0</div>
+              <div class="stat-label">Мероприятий</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="total-registrations">0</div>
+              <div class="stat-label">Всего записей</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="active-registrations">0</div>
+              <div class="stat-label">Активных записей</div>
+            </div>
+            <!-- УБРАН БЛОК "ОТМЕТИВШИХСЯ" -->
+          </div>
         </div>
       </div>
 
       <!-- Создание мероприятия -->
       <div class="section">
-        <h2>Создать мероприятие</h2>
-        <input type="text" id="match_name" placeholder="Название матча (Chelsea vs Arsenal)">
-        <input type="datetime-local" id="match_date">
-        <input type="text" id="bar_address" placeholder="Адрес бара">
-        <textarea id="description" placeholder="Описание мероприятия" rows="3"></textarea>
-        <input type="number" id="max_participants" placeholder="Макс. участников (опционально)">
-        <input type="number" id="points_award" placeholder="Баллы за посещение" value="10" min="0">
-        <label style="display:block; margin:10px 0;">
-          <input type="checkbox" id="is_open" checked> Открыта запись
-        </label>
-        <button id="create-event-button">Создать мероприятие</button>
+        <h2 class="collapsible-section">➕ Создать мероприятие</h2>
+        <div class="section-content collapsed">
+          <input type="text" id="match_name" placeholder="Название матча (Chelsea vs Arsenal)">
+          <input type="datetime-local" id="match_date">
+          <input type="text" id="bar_address" placeholder="Адрес бара">
+          <textarea id="description" placeholder="Описание мероприятия" rows="3"></textarea>
+          <input type="number" id="max_participants" placeholder="Макс. участников (опционально)">
+          <input type="number" id="points_award" placeholder="Баллы за посещение" value="10" min="0">
+          <label style="display:block; margin:10px 0;">
+            <input type="checkbox" id="is_open" checked> Открыта запись
+          </label>
+          <button id="create-event-button">Создать мероприятие</button>
+        </div>
       </div>
 
       <!-- Управление записями на мероприятия -->
       <div class="section">
-        <h2>🎫 Управление записями на мероприятия</h2>
-        
-        <div class="filters">
-          <input type="text" id="search-registration" placeholder="Поиск по имени или мероприятию">
-          <select id="filter-event">
-            <option value="">Все мероприятия</option>
-          </select>
-          <select id="filter-status">
-            <option value="">Все статусы</option>
-            <option value="registered">Записан</option>
-            <option value="cancelled">Отменен</option>
-            <option value="checked_in">Отметилcя</option>
-          </select>
+        <h2 class="collapsible-section">🎫 Управление записями на мероприятия</h2>
+        <div class="section-content collapsed">
+          <div class="filters">
+            <input type="text" id="search-registration" placeholder="Поиск по имени или мероприятию">
+            <select id="filter-event">
+              <option value="">Все мероприятия</option>
+            </select>
+            <select id="filter-status">
+              <option value="">Все статусы</option>
+              <option value="registered">Записан</option>
+              <option value="cancelled">Отменен</option>
+              <option value="checked_in">Отметилcя</option>
+            </select>
+          </div>
+          
+          <div id="registrations-list" class="registrations-list">Загрузка...</div>
+          <button id="refresh-registrations" class="btn">🔄 Обновить список записей</button>
         </div>
-        
-        <div id="registrations-list" class="registrations-list">Загрузка...</div>
-        <button id="refresh-registrations" class="btn">🔄 Обновить список записей</button>
       </div>
 
       <!-- Календарь мероприятий -->
       <div class="section">
-        <h2>📅 Календарь мероприятий</h2>
-        
-        <!-- Табы для фильтрации мероприятий -->
-        <div class="event-tabs">
-          <div class="event-tab active" onclick="switchEventTab('upcoming')">Предстоящие</div>
-          <div class="event-tab" onclick="switchEventTab('current')">Текущие</div>
-          <div class="event-tab" onclick="switchEventTab('past')">Прошедшие</div>
-          <div class="event-tab" onclick="switchEventTab('all')">Все мероприятия</div>
+        <h2 class="collapsible-section">📅 Календарь мероприятий</h2>
+        <div class="section-content collapsed">
+          <!-- Табы для фильтрации мероприятий -->
+          <div class="event-tabs">
+            <div class="event-tab active" onclick="switchEventTab('upcoming')">Предстоящие</div>
+            <div class="event-tab" onclick="switchEventTab('current')">Текущие</div>
+            <div class="event-tab" onclick="switchEventTab('past')">Прошедшие</div>
+            <div class="event-tab" onclick="switchEventTab('all')">Все мероприятия</div>
+          </div>
+          
+          <div id="upcoming-events" class="event-tab-content active">
+            <div id="upcoming-events-list" class="event-list">Загрузка предстоящих мероприятий...</div>
+          </div>
+          
+          <div id="current-events" class="event-tab-content">
+            <div id="current-events-list" class="event-list">Загрузка текущих мероприятий...</div>
+          </div>
+          
+          <div id="past-events" class="event-tab-content">
+            <div id="past-events-list" class="event-list">Загрузка прошедших мероприятий...</div>
+          </div>
+          
+          <div id="all-events" class="event-tab-content">
+            <div id="all-events-list" class="event-list">Загрузка всех мероприятий...</div>
+          </div>
+          
+          <button id="refresh-events" class="btn">🔄 Обновить календарь</button>
         </div>
-        
-        <div id="upcoming-events" class="event-tab-content active">
-          <div id="upcoming-events-list" class="event-list">Загрузка предстоящих мероприятий...</div>
-        </div>
-        
-        <div id="current-events" class="event-tab-content">
-          <div id="current-events-list" class="event-list">Загрузка текущих мероприятий...</div>
-        </div>
-        
-        <div id="past-events" class="event-tab-content">
-          <div id="past-events-list" class="event-list">Загрузка прошедших мероприятий...</div>
-        </div>
-        
-        <div id="all-events" class="event-tab-content">
-          <div id="all-events-list" class="event-list">Загрузка всех мероприятий...</div>
-        </div>
-        
-        <button id="refresh-events" class="btn">🔄 Обновить календарь</button>
       </div>
 
       <!-- Заявки на Membership -->
       <div class="section">
-        <h2>📋 Заявки на Membership</h2>
-        <div id="pending-list" class="pending-list">Загрузка...</div>
-        <button id="refresh-pending" class="btn">🔄 Обновить список</button>
+        <h2 class="collapsible-section">📋 Заявки на Membership</h2>
+        <div class="section-content collapsed">
+          <div id="pending-list" class="pending-list">Загрузка...</div>
+          <button id="refresh-pending" class="btn">🔄 Обновить список</button>
+        </div>
       </div>
 
       <!-- Все пользователи -->
       <div class="section">
-        <h2>👥 Все пользователи</h2>
-        <div style="margin-bottom: 15px;">
-          <input type="text" id="search-user" placeholder="Поиск по имени или username" onkeyup="searchUsers()">
+        <h2 class="collapsible-section">👥 Все пользователи</h2>
+        <div class="section-content collapsed">
+          <div style="margin-bottom: 15px;">
+            <input type="text" id="search-user" placeholder="Поиск по имени или username" onkeyup="searchUsers()">
+          </div>
+          <div id="all-users-list" class="pending-list">Загрузка...</div>
+          <button id="refresh-users" class="btn">🔄 Обновить список пользователей</button>
         </div>
-        <div id="all-users-list" class="pending-list">Загрузка...</div>
-        <button id="refresh-users" class="btn">🔄 Обновить список пользователей</button>
       </div>
 
       <!-- Управление пользователем -->
       <div class="section">
-        <h2>⚙️ Управление пользователем</h2>
-        <input type="text" id="user-id-input" placeholder="Telegram ID пользователя">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <input type="number" id="add-points" placeholder="Добавить очки">
-          <input type="number" id="remove-points" placeholder="Убрать очки">
+        <h2 class="collapsible-section">⚙️ Управление пользователем</h2>
+        <div class="section-content collapsed">
+          <input type="text" id="user-id-input" placeholder="Telegram ID пользователя">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <input type="number" id="add-points" placeholder="Добавить очки">
+            <input type="number" id="remove-points" placeholder="Убрать очки">
+          </div>
+          <select id="user-status-select">
+            <option value="">Выберите статус</option>
+            <option value="New">New - Новый</option>
+            <option value="pending">pending - На рассмотрении</option>
+            <option value="approved">approved - Подтвержден</option>
+            <option value="rejected">rejected - Отклонен</option>
+          </select>
+          <button id="update-user-btn" class="btn">Обновить пользователя</button>
         </div>
-        <select id="user-status-select">
-          <option value="">Выберите статус</option>
-          <option value="New">New - Новый</option>
-          <option value="pending">pending - На рассмотрении</option>
-          <option value="approved">approved - Подтвержден</option>
-          <option value="rejected">rejected - Отклонен</option>
-        </select>
-        <button id="update-user-btn" class="btn">Обновить пользователя</button>
       </div>
 
       <button id="logout-button" style="background:#c00; margin-top:40px; width:100%;">Выйти из админ-панели</button>
@@ -789,6 +832,19 @@
       }
     }
 
+    // === Переключение сворачиваемых секций ===
+    function toggleSection(sectionHeader) {
+      // ПРОВЕРКА АВТОРИЗАЦИИ ПРИ ПОПЫТКЕ ОТКРЫТЬ СЕКЦИЮ
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
+      const sectionContent = sectionHeader.nextElementSibling;
+      sectionContent.classList.toggle('collapsed');
+      sectionHeader.classList.toggle('collapsed');
+    }
+
     // === Авторизация ===
     function tryLogin() {
       const login = document.getElementById('admin-login')?.value?.trim();
@@ -822,6 +878,12 @@
 
     // === Переключение табов мероприятий ===
     function switchEventTab(tabName) {
+      // ПРОВЕРКА АВТОРИЗАЦИИ
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
       // Обновляем активные табы
       document.querySelectorAll('.event-tab').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.event-tab-content').forEach(content => content.classList.remove('active'));
@@ -854,17 +916,13 @@
           .select('*', { count: 'exact', head: true })
           .eq('status', 'registered');
         
-        // Отметившиеся
-        const { count: checkedInCount } = await supabaseClient
-          .from('registrations')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'checked_in');
+        // УБРАН ЗАПРОС ДЛЯ checkedInCount
         
         document.getElementById('total-users').textContent = totalUsers || 0;
         document.getElementById('total-events').textContent = totalEvents || 0;
         document.getElementById('total-registrations').textContent = totalRegistrations || 0;
         document.getElementById('active-registrations').textContent = activeRegistrations || 0;
-        document.getElementById('checked-in-count').textContent = checkedInCount || 0;
+        // УБРАНО ОБНОВЛЕНИЕ checked-in-count
         
       } catch (error) {
         console.error('Error loading stats:', error);
@@ -1051,6 +1109,12 @@
     
     // === Показать QR код мероприятия ===
     function showEventQR(eventId, eventName, eventDate) {
+      // ПРОВЕРКА АВТОРИЗАЦИИ
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
       const modal = document.getElementById('qr-modal');
       const qrContainer = document.getElementById('qr-code-container');
       const eventInfo = document.getElementById('qr-event-info');
@@ -1117,6 +1181,12 @@
     
     // === Удаление мероприятия ===
     async function deleteEvent(eventId, eventName) {
+      // ПРОВЕРКА АВТОРИЗАЦИИ
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
       if (!confirm(`Вы уверены, что хотите удалить мероприятие "${eventName}"? Это действие нельзя отменить и удалит все связанные записи!`)) {
         return;
       }
@@ -1157,6 +1227,12 @@
 
     // === Управление записями на мероприятия ===
     async function loadRegistrations() {
+      // ПРОВЕРКА АВТОРИЗАЦИИ
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
       try {
         let query = supabaseClient
           .from('registrations')
@@ -1307,6 +1383,12 @@
 
     // === Создание мероприятия ===
     async function createEvent() {
+      // ПРОВЕРКА АВТОРИЗАЦИИ
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
       const name = document.getElementById('match_name')?.value?.trim();
       const date = document.getElementById('match_date')?.value;
       const addr = document.getElementById('bar_address')?.value?.trim();
@@ -1354,6 +1436,12 @@
 
     // === Загрузка заявок на Membership ===
     async function loadPending() {
+      // ПРОВЕРКА АВТОРИЗАЦИИ
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
       try {
         const { data, error } = await supabaseClient
           .from('users')
@@ -1410,6 +1498,12 @@
 
     // === Загрузка всех пользователей ===
     async function loadAllUsers() {
+      // ПРОВЕРКА АВТОРИЗАЦИИ
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
       try {
         const { data, error } = await supabaseClient
           .from('users')
@@ -1476,6 +1570,12 @@
 
     // === Поиск пользователей ===
     function searchUsers() {
+      // ПРОВЕРКА АВТОРИЗАЦИИ
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
       const searchTerm = document.getElementById('search-user').value.toLowerCase();
       if (!window.allUsers) return;
       
@@ -1491,6 +1591,12 @@
 
     // === Одобрение заявки ===
     async function approveApplication(userId) {
+      // ПРОВЕРКА АВТОРИЗАЦИИ
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
       if (!confirm('Одобрить заявку и начислить 100 бонусных очков?')) return;
       
       try {
@@ -1530,6 +1636,12 @@
 
     // === Отклонение заявки ===
     async function rejectApplication(userId) {
+      // ПРОВЕРКА АВТОРИЗАЦИИ
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
       if (!confirm('Отклонить заявку на членство?')) return;
       
       try {
@@ -1557,6 +1669,12 @@
 
     // === Обновление пользователя ===
     async function updateUser() {
+      // ПРОВЕРКА АВТОРИЗАЦИИ
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
       const telegramIdInput = document.getElementById('user-id-input').value.trim();
       const addPoints = parseInt(document.getElementById('add-points').value) || 0;
       const removePoints = parseInt(document.getElementById('remove-points').value) || 0;
@@ -1634,6 +1752,12 @@
 
     // === Восстановление записи пользователя ===
     async function reRegisterUser(registrationId, userName, eventName) {
+      // ПРОВЕРКА АВТОРИЗАЦИИ
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
       if (!confirm(`Восстановить запись пользователя "${userName}" на мероприятие "${eventName}"?`)) {
         return;
       }
@@ -1662,6 +1786,12 @@
 
     // === Удаление записи ===
     async function deleteRegistration(registrationId, userName, eventName) {
+      // ПРОВЕРКА АВТОРИЗАЦИИ
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
       if (!confirm(`Удалить запись пользователя "${userName}" на мероприятие "${eventName}"? Это действие нельзя отменить.`)) {
         return;
       }
@@ -1703,6 +1833,13 @@
       document.getElementById('filter-event')?.addEventListener('change', loadRegistrations);
       document.getElementById('filter-status')?.addEventListener('change', loadRegistrations);
 
+      // Обработчики для сворачиваемых секций
+      document.querySelectorAll('.collapsible-section').forEach(header => {
+        header.addEventListener('click', function() {
+          toggleSection(this);
+        });
+      });
+
       // Автовход при наличии сессии
       if (localStorage.getItem('adminLoggedIn') === 'true') {
         document.getElementById('login-section').classList.add('hidden');
@@ -1714,6 +1851,10 @@
         loadAllUsers();
         loadRegistrations();
         loadEventsForFilter();
+      } else {
+        // ГАРАНТИРУЕМ, ЧТО БЕЗ АВТОРИЗАЦИИ АДМИН-ПАНЕЛЬ НЕ ВИДНА
+        document.getElementById('admin-content').classList.add('hidden');
+        document.getElementById('login-section').classList.remove('hidden');
       }
     });
   </script>
