@@ -31,7 +31,7 @@
 
     body {
       font-family: 'Roboto', sans-serif;
-      background: var(--bg-dark) url('https://res.cloudinary.com/dknzxyzgc/image/upload/v1768595914/30fadcf516e8a27ec20ef367046fb23e_h3475c.gif') no-repeat center center fixed;
+      background: var(--bg-dark) url('https://res.cloudinary.com/dknzxyzgc/image/upload/v1768599024/2_bbtc2n.gif') no-repeat center center fixed;
       background-size: cover;
       color: var(--text-light);
       min-height: 100vh;
@@ -271,8 +271,8 @@
 
 <main>
   <div style="text-align:center;">
-    <h1>AlmaBlues<</h1>
-    <div class="location">Chelsea FC</div>
+    <h1>Chelsea FC</h1>
+    <div class="location">AlmaBlues</div>
 
     <div id="status">Загрузка...</div>
 
@@ -349,7 +349,7 @@
             localStorage.setItem('userFullName', data.full_name);
             location.href = 'dashboard.html';
           }
-        }, 3000);
+        }, 2000);
       } else {
         // Пользователь есть в системе, но ФИО не заполнено - идем в profile
         status.textContent = 'Пожалуйста, заполните профиль';
