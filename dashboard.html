@@ -299,15 +299,24 @@
       min-width: 100px;
     }
 
-    /* Мобильная оптимизация */
-    @media (max-width: 480px) {
-      .container {
-        padding: 0 10px;
-      }
-      
-      h1 {
-        font-size: 2rem;
-      }
+/* Мобильная оптимизация */
+@media (max-width: 480px) {
+  .container {
+    padding: 0 10px;
+  }
+  
+  header > div {
+    gap: 10px;
+  }
+  
+  header img {
+    width: 45px !important;
+    height: 45px !important;
+  }
+  
+  h1 {
+    font-size: 1.8rem;
+  }
       
       .card {
         padding: 15px;
@@ -432,10 +441,17 @@
 
 <body>
 <div class="container">
-  <header>
-    <h1>AlmaBlues</h1>
-    <p>Dashboard</p>
-  </header>
+<header>
+  <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 1rem;">
+    <img src="https://res.cloudinary.com/dknzxyzgc/image/upload/v1768599011/flag_jeljpd.gif" 
+         alt="AlmaBlues Logo" 
+         style="width: 60px; height: 60px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+    <div>
+      <h1>AlmaBlues</h1>
+      <p>Dashboard</p>
+    </div>
+  </div>
+</header>
 
   <div class="user-info">
     <div>
