@@ -97,8 +97,8 @@
   </div>
 
   <div class="field">
-    <label>Email (опционально)</label>
-    <input type="email" id="email">
+    <label>Номер телефона (опционально)</label>
+    <input type="tel" id="phone" placeholder="+7 (XXX) XXX-XX-XX">
   </div>
 
   <div class="field">
@@ -163,7 +163,7 @@
     document.getElementById('username').textContent =
       data.username || 'не указан';
     document.getElementById('full_name').value = data.full_name || '';
-    document.getElementById('email').value = data.email || '';
+    document.getElementById('phone').value = data.phone || '';  // изменено
     document.getElementById('points').textContent = data.points ?? 0;
     document.getElementById('membership_status').textContent =
       data.membership_status || 'New';
@@ -171,39 +171,39 @@
     document.getElementById('status').style.display = 'none';
   }
 
-document.getElementById('profile-form')
-  .addEventListener('submit', async (e) => {
-    e.preventDefault();
+  document.getElementById('profile-form')
+    .addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-    const fullName =
-      document.getElementById('full_name').value.trim();
-    const email =
-      document.getElementById('email').value.trim() || null;
+      const fullName =
+        document.getElementById('full_name').value.trim();
+      const phone =
+        document.getElementById('phone').value.trim() || null;  // изменено
 
-    if (!fullName) {
-      alert('Укажите ФИО');
-      return;
-    }
+      if (!fullName) {
+        alert('Укажите ФИО');
+        return;
+      }
 
-    const { error } = await supabaseClient
-      .from('users')
-      .update({ full_name: fullName, email })
-      .eq('id', userId);
+      const { error } = await supabaseClient
+        .from('users')
+        .update({ full_name: fullName, phone })  // изменено
+        .eq('id', userId);
 
-    if (error) {
-      alert('Ошибка сохранения: ' + error.message);
-    } else {
-      alert('Профиль обновлён');
-      // После сохранения переходим в dashboard
-      setTimeout(() => location.href = 'dashboard.html', 1000);
-    }
-  });
-    // Кнопка перехода в Dashboard
+      if (error) {
+        alert('Ошибка сохранения: ' + error.message);
+      } else {
+        alert('Профиль обновлён');
+        // После сохранения переходим в dashboard
+        setTimeout(() => location.href = 'dashboard.html', 1000);
+      }
+    });
+
+  // Кнопка перехода в Dashboard
   document.getElementById('dashboard-btn')
     .addEventListener('click', () => {
       location.href = 'dashboard.html';
     });
-
 
   loadProfile();
 </script>
