@@ -11,6 +11,7 @@
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
     :root {
@@ -473,13 +474,12 @@
       <button class="btn" id="participants-btn" onclick="openParticipantsModal()">Показать участников</button>
     </div>
 
-    <!-- QR код -->
+    <!-- QR код для отметки -->
     <div class="card">
-      <h3 class="card-title">📱 QR код</h3>
-      <p class="card-description">Ваш персональный QR для проверки на мероприятиях</p>
+      <h3 class="card-title">📱 Отметка о посещении</h3>
+      <p class="card-description">Отсканируйте QR код мероприятия для отметки</p>
       <div class="event-actions">
-        <button class="btn btn-small" id="show-qr-btn" onclick="showMyQR()">Показать мой QR</button>
-        <button class="btn btn-small" id="scan-qr-btn" onclick="scanQR()">Сканировать QR</button>
+        <button class="btn btn-small" id="scan-qr-btn" onclick="openQRScannerModal()">📱 Отсканировать QR код</button>
       </div>
     </div>
 
@@ -513,14 +513,19 @@
   </div>
 </div>
 
-<!-- Модальное окно для QR кода -->
-<div id="qr-modal" class="modal">
+<!-- Модальное окно для QR сканера -->
+<div id="qr-scanner-modal" class="modal">
   <div class="modal-content">
-    <span class="close-modal" onclick="closeQRModal()">&times;</span>
-    <h3>📱 Ваш QR код</h3>
-    <div id="qr-modal-content" style="text-align: center;">
-      <div id="qr-code"></div>
-      <p style="margin-top: 15px; color: #aaa;">Покажите этот QR код организатору для отметки о посещении</p>
+    <span class="close-modal" onclick="closeQRScannerModal()">&times;</span>
+    <h3>📱 Сканирование QR кода</h3>
+    <div id="scanner-container" style="text-align: center; margin: 20px 0;">
+      <div id="qr-reader" style="width: 100%; max-width: 300px; margin: 0 auto;"></div>
+    </div>
+    <div id="scanner-result" style="margin-top: 15px; text-align: center;"></div>
+    <div style="margin-top: 20px;">
+      <p>Или введите код мероприятия вручную:</p>
+      <input type="text" id="manual-event-code" placeholder="Код мероприятия" style="width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; background: #112; color: white; border: 1px solid #444;">
+      <button class="btn" onclick="processManualCode()" style="margin-top: 10px;">Подтвердить</button>
     </div>
   </div>
 </div>
@@ -849,6 +854,7 @@
             <div class="event-date">📅 ${formattedDate} (UTC+5)</div>
             <div class="event-address">📍 ${event.bar_address}</div>
             ${event.max_participants ? `<div style="font-size: 0.8rem; color: #FFC107;">👥 Мест: ${event.max_participants}</div>` : ''}
+            ${event.points_award ? `<div style="font-size: 0.8rem; color: #D4A017;">🏆 Баллов за посещение: ${event.points_award}</div>` : ''}
           </div>
           ${countdownHtml}
           ${registrationStatusHtml}
@@ -1007,12 +1013,24 @@
     document.getElementById('participants-modal').style.display = 'none';
   }
 
-  function openQRModal() {
-    document.getElementById('qr-modal').style.display = 'flex';
+  function openQRScannerModal() {
+    document.getElementById('qr-scanner-modal').style.display = 'flex';
+    document.getElementById('scanner-result').innerHTML = '';
+    document.getElementById('manual-event-code').value = '';
+    
+    // Если библиотека html5-qrcode загружена, инициализируем сканер
+    if (typeof Html5Qrcode !== 'undefined') {
+      initQRScanner();
+    } else {
+      document.getElementById('scanner-container').innerHTML = 
+        '<p style="color: #FFC107;">⚠️ Библиотека сканирования не загружена</p>' +
+        '<p>Введите код мероприятия вручную ниже</p>';
+    }
   }
 
-  function closeQRModal() {
-    document.getElementById('qr-modal').style.display = 'none';
+  function closeQRScannerModal() {
+    document.getElementById('qr-scanner-modal').style.display = 'none';
+    stopQRScanner();
   }
 
   // Загрузка моих записей для редактирования
@@ -1170,60 +1188,164 @@
     }
   }
 
-  // QR код
-  async function showMyQR() {
+  // === QR сканер ===
+  let html5QrCode = null;
+
+  function initQRScanner() {
     try {
-      // Получаем данные пользователя
-      const { data: user } = await supabaseClient
-        .from('users')
-        .select('id, telegram_id, full_name')
-        .eq('id', userId)
-        .single();
-      
-      if (!user) {
-        showNotification('❌ Не удалось загрузить данные пользователя', 'error');
-        return;
+      if (!html5QrCode && typeof Html5Qrcode !== 'undefined') {
+        html5QrCode = new Html5Qrcode("qr-reader");
+        
+        const config = { 
+          fps: 10, 
+          qrbox: { width: 250, height: 250 },
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+        };
+        
+        html5QrCode.start(
+          { facingMode: "environment" },
+          config,
+          onQRCodeScanned
+        ).catch(err => {
+          console.error("Ошибка сканирования:", err);
+          document.getElementById('scanner-container').innerHTML = 
+            '<p style="color: #ff6666;">⚠️ Ошибка доступа к камере</p>' +
+            '<p>Пожалуйста, введите код мероприятия вручную ниже</p>';
+        });
       }
-      
-      // Создаем QR код с данными пользователя
-      const qrData = JSON.stringify({
-        user_id: user.id,
-        telegram_id: user.telegram_id,
-        name: user.full_name,
-        timestamp: Date.now()
-      });
-      
-      // Кодируем в base64 для простоты
-      const qrText = btoa(qrData);
-      
-      // Создаем простой текстовый QR (в реальном приложении используйте библиотеку)
-      const qrContent = document.getElementById('qr-modal-content');
-      qrContent.innerHTML = `
-        <div style="background: white; padding: 20px; border-radius: 8px; display: inline-block;">
-          <div style="font-family: monospace; font-size: 10px; letter-spacing: 2px; line-height: 10px;">
-            <!-- Простая визуализация QR -->
-            <div>████████████████</div>
-            <div>██          ██</div>
-            <div>██  ████  ██</div>
-            <div>██  ████  ██</div>
-            <div>██          ██</div>
-            <div>████████████████</div>
-          </div>
-        </div>
-        <p style="margin-top: 15px; color: #aaa;">ID: ${user.id.substring(0, 8)}...</p>
-        <p style="font-size: 0.9rem; color: #ccc;">${user.full_name}</p>
-      `;
-      
-      openQRModal();
-      
     } catch (error) {
-      console.error('Error generating QR:', error);
-      showNotification('❌ Ошибка при создании QR кода', 'error');
+      console.error("Ошибка инициализации сканера:", error);
     }
   }
 
-  function scanQR() {
-    showNotification('📱 Функция сканирования QR кода в разработке', 'info');
+  function stopQRScanner() {
+    if (html5QrCode) {
+      html5QrCode.stop().then(() => {
+        html5QrCode.clear();
+        html5QrCode = null;
+      }).catch(err => {
+        console.error("Ошибка остановки сканера:", err);
+      });
+    }
+  }
+
+  function onQRCodeScanned(decodedText, decodedResult) {
+    console.log("QR код отсканирован:", decodedText);
+    
+    try {
+      const eventData = JSON.parse(decodedText);
+      processEventQR(eventData);
+    } catch (error) {
+      document.getElementById('scanner-result').innerHTML = 
+        '<p style="color: #ff6666;">❌ Неверный формат QR кода</p>';
+    }
+  }
+
+  function processManualCode() {
+    const manualCode = document.getElementById('manual-event-code').value.trim();
+    
+    if (!manualCode) {
+      showNotification('Введите код мероприятия', 'error');
+      return;
+    }
+    
+    try {
+      const eventData = JSON.parse(manualCode);
+      processEventQR(eventData);
+    } catch (error) {
+      showNotification('❌ Неверный формат кода', 'error');
+    }
+  }
+
+  async function processEventQR(eventData) {
+    if (!eventData.event_id) {
+      document.getElementById('scanner-result').innerHTML = 
+        '<p style="color: #ff6666;">❌ В QR коде нет идентификатора мероприятия</p>';
+      return;
+    }
+    
+    document.getElementById('scanner-result').innerHTML = 
+      '<p>⏳ Обработка QR кода...</p>';
+    
+    try {
+      // Проверяем, существует ли мероприятие
+      const { data: event, error: eventError } = await supabaseClient
+        .from('events')
+        .select('id, match_name, points_award')
+        .eq('id', eventData.event_id)
+        .single();
+      
+      if (eventError || !event) {
+        document.getElementById('scanner-result').innerHTML = 
+          '<p style="color: #ff6666;">❌ Мероприятие не найдено</p>';
+        return;
+      }
+      
+      // Проверяем, записан ли пользователь на мероприятие
+      const { data: registration } = await supabaseClient
+        .from('registrations')
+        .select('id, status')
+        .eq('user_id', userId)
+        .eq('event_id', eventData.event_id)
+        .maybeSingle();
+      
+      if (!registration) {
+        document.getElementById('scanner-result').innerHTML = 
+          `<p style="color: #ff6666;">❌ Вы не записаны на мероприятие "${event.match_name}"</p>`;
+        return;
+      }
+      
+      if (registration.status === 'checked_in') {
+        document.getElementById('scanner-result').innerHTML = 
+          `<p style="color: #FFC107;">⚠️ Вы уже отметились на мероприятии "${event.match_name}"</p>`;
+        return;
+      }
+      
+      if (registration.status === 'cancelled') {
+        document.getElementById('scanner-result').innerHTML = 
+          `<p style="color: #ff6666;">❌ Ваша запись на мероприятие "${event.match_name}" отменена</p>`;
+        return;
+      }
+      
+      // Отмечаем пользователя как посетившего мероприятие
+      const { error: updateError } = await supabaseClient
+        .from('registrations')
+        .update({ 
+          status: 'checked_in',
+          checkin_time: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', registration.id);
+      
+      if (updateError) throw updateError;
+      
+      // Начисляем баллы за посещение
+      const pointsAward = event.points_award || 10;
+      await supabaseClient
+        .from('users')
+        .update({
+          points: supabaseClient.sql`points + ${pointsAward}`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+      
+      document.getElementById('scanner-result').innerHTML = 
+        `<p style="color: #4CAF50;">✅ Вы успешно отметились на мероприятии "${event.match_name}"!</p>` +
+        `<p>🏆 Вам начислено ${pointsAward} баллов</p>`;
+      
+      // Обновляем данные пользователя и мероприятия
+      setTimeout(() => {
+        loadUserData();
+        loadEvents();
+        closeQRScannerModal();
+        showNotification(`✅ Вы отметились на "${event.match_name}"! +${pointsAward} баллов`, 'success');
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error processing QR code:', error);
+      document.getElementById('scanner-result').innerHTML = 
+        '<p style="color: #ff6666;">❌ Ошибка при обработке QR кода</p>';
+    }
   }
 
   // === Загружаем данные пользователя ===
@@ -1264,6 +1386,7 @@
     // Очистка таймеров при закрытии страницы
     window.addEventListener('beforeunload', () => {
       Object.values(countdownTimers).forEach(timer => clearTimeout(timer));
+      stopQRScanner();
     });
     
     // Закрытие модальных окон по клику вне контента
@@ -1271,6 +1394,9 @@
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
           modal.style.display = 'none';
+          if (modal.id === 'qr-scanner-modal') {
+            stopQRScanner();
+          }
         }
       });
     });
