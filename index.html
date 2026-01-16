@@ -31,11 +31,24 @@
 
     body {
       font-family: 'Roboto', sans-serif;
-      background: var(--bg-dark);
+      background: var(--bg-dark) url('https://res.cloudinary.com/dknzxyzgc/image/upload/v1768595914/30fadcf516e8a27ec20ef367046fb23e_h3475c.gif') no-repeat center center fixed;
+      background-size: cover;
       color: var(--text-light);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 16, 40, 0.85);
+      z-index: -1;
     }
 
     main {
@@ -44,6 +57,8 @@
       align-items: center;
       justify-content: center;
       padding: 40px 20px;
+      position: relative;
+      z-index: 1;
     }
 
     h1 {
@@ -53,18 +68,93 @@
       text-transform: uppercase;
       color: var(--white);
       margin-bottom: 0.2em;
+      text-shadow: 
+        0 0 10px rgba(212, 160, 23, 0.8),
+        0 0 20px rgba(212, 160, 23, 0.5),
+        0 0 30px rgba(212, 160, 23, 0.3);
+      animation: glow 2s ease-in-out infinite alternate;
+      letter-spacing: 1px;
+      position: relative;
+    }
+
+    h1::after {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      right: -5px;
+      bottom: -5px;
+      border: 2px solid transparent;
+      border-radius: 5px;
+      animation: border-glow 3s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes glow {
+      from {
+        text-shadow: 
+          0 0 10px rgba(212, 160, 23, 0.8),
+          0 0 20px rgba(212, 160, 23, 0.5),
+          0 0 30px rgba(212, 160, 23, 0.3);
+      }
+      to {
+        text-shadow: 
+          0 0 20px rgba(212, 160, 23, 1),
+          0 0 30px rgba(212, 160, 23, 0.8),
+          0 0 40px rgba(212, 160, 23, 0.6),
+          0 0 50px rgba(212, 160, 23, 0.4);
+      }
+    }
+
+    @keyframes border-glow {
+      0%, 100% {
+        border-color: rgba(212, 160, 23, 0.3);
+        box-shadow: 0 0 10px rgba(212, 160, 23, 0.3);
+      }
+      50% {
+        border-color: rgba(212, 160, 23, 0.8);
+        box-shadow: 0 0 20px rgba(212, 160, 23, 0.6);
+      }
     }
 
     .location {
       font-family: 'Oswald', sans-serif;
-      font-size: clamp(1.8rem, 5vw, 3.2rem);
+      font-size: clamp(2.5rem, 6vw, 4rem);
       color: var(--gold);
       margin-bottom: 2rem;
+      text-shadow: 0 0 10px rgba(212, 160, 23, 0.5);
+      letter-spacing: 2px;
+      position: relative;
+      display: inline-block;
+      padding: 0 10px;
+    }
+
+    .location::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, 
+        transparent 0%, 
+        var(--gold) 20%, 
+        var(--gold) 80%, 
+        transparent 100%);
+      transform: translateY(-50%);
+      opacity: 0.5;
     }
 
     #status {
       margin-bottom: 1.5rem;
-      font-size: 1.1rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--gold);
+      text-shadow: 0 0 10px rgba(212, 160, 23, 0.5);
+      min-height: 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     form {
@@ -73,6 +163,11 @@
       gap: 1rem;
       max-width: 360px;
       margin: 0 auto;
+      background: rgba(0, 16, 40, 0.8);
+      padding: 2rem;
+      border-radius: 15px;
+      border: 1px solid rgba(212, 160, 23, 0.3);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
     }
 
     input, button {
@@ -80,10 +175,23 @@
       font-size: 1rem;
       border-radius: 6px;
       border: none;
+      transition: all 0.3s ease;
     }
 
     input {
       outline: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 10px rgba(212, 160, 23, 0.3);
+    }
+
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.6);
     }
 
     button {
@@ -91,10 +199,40 @@
       color: var(--chelsea-blue-dark);
       font-weight: 600;
       cursor: pointer;
+      position: relative;
+      overflow: hidden;
     }
 
     button:hover {
       background: var(--gold-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    button::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        to bottom right,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      transform: rotate(30deg);
+      animation: button-shine 3s infinite;
+    }
+
+    @keyframes button-shine {
+      0% {
+        transform: translateX(-100%) translateY(-100%) rotate(30deg);
+      }
+      100% {
+        transform: translateX(100%) translateY(100%) rotate(30deg);
+      }
     }
 
     footer {
@@ -102,6 +240,29 @@
       text-align: center;
       font-size: 0.9rem;
       color: #777;
+      position: relative;
+      z-index: 1;
+      background: rgba(0, 16, 40, 0.8);
+      border-top: 1px solid rgba(212, 160, 23, 0.2);
+    }
+
+    .welcome-home {
+      animation: welcomePulse 1s ease-in-out infinite alternate;
+      font-size: 2rem !important;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    @keyframes welcomePulse {
+      from {
+        transform: scale(1);
+        text-shadow: 0 0 10px rgba(212, 160, 23, 0.8);
+      }
+      to {
+        transform: scale(1.05);
+        text-shadow: 0 0 20px rgba(212, 160, 23, 1),
+                    0 0 30px rgba(212, 160, 23, 0.8);
+      }
     }
   </style>
 </head>
@@ -110,21 +271,21 @@
 
 <main>
   <div style="text-align:center;">
-    <h1>CHELSEA FC</h1>
-    <div class="location">KAZAKHSTAN</div>
+    <h1>Chelsea FC</h1>
+    <div class="location">AlmaBlues</div>
 
     <div id="status">Загрузка...</div>
 
     <form id="reg-form">
       <input type="text" id="full_name" placeholder="Ваше ФИО (обязательно)" required>
-      <input type="email" id="email" placeholder="Email (опционально)">
+      <input type="tel" id="phone" placeholder="Номер телефона (опционально)">
       <button type="submit">Зарегистрироваться</button>
     </form>
   </div>
 </main>
 
 <footer>
-  COYB! • Chelsea FC Supporters Club Kazakhstan • 2026
+  • Chelsea FC Supporters Club Kazakhstan • 2026
 </footer>
 
 <script>
@@ -145,6 +306,9 @@
   const status = document.getElementById('status');
   const regForm = document.getElementById('reg-form');
   regForm.style.display = 'none';
+
+  // Переменная для отслеживания времени показа "Welcome home"
+  let welcomeHomeShownTime = 0;
 
   async function init() {
     if (!tg.initDataUnsafe?.user) {
@@ -170,11 +334,22 @@
     if (data) {
       // Проверяем, заполнено ли поле full_name
       if (data.full_name && data.full_name.trim() !== '') {
-        // Пользователь уже заполнил ФИО - идем в dashboard
-        status.textContent = 'Добро пожаловать обратно!';
-        localStorage.setItem('userId', data.id);
-        localStorage.setItem('userFullName', data.full_name);
-        setTimeout(() => location.href = 'dashboard.html', 1200);
+        // Пользователь уже заполнил ФИО - показываем "Welcome home" на 2 секунды
+        const welcomeTime = Date.now();
+        welcomeHomeShownTime = welcomeTime;
+        
+        status.textContent = 'Welcome home';
+        status.classList.add('welcome-home');
+        
+        // Ждем минимум 2 секунды перед переходом
+        setTimeout(() => {
+          // Проверяем, что это тот же самый welcome home (пользователь не ушел с экрана)
+          if (welcomeHomeShownTime === welcomeTime) {
+            localStorage.setItem('userId', data.id);
+            localStorage.setItem('userFullName', data.full_name);
+            location.href = 'dashboard.html';
+          }
+        }, 2000);
       } else {
         // Пользователь есть в системе, но ФИО не заполнено - идем в profile
         status.textContent = 'Пожалуйста, заполните профиль';
@@ -196,7 +371,7 @@
     e.preventDefault();
 
     const fullName = document.getElementById('full_name').value.trim();
-    const email = document.getElementById('email').value.trim() || null;
+    const phone = document.getElementById('phone').value.trim() || null;
 
     if (!fullName) {
       alert('Пожалуйста, укажите ФИО');
@@ -207,7 +382,7 @@
       telegram_id: tg.initDataUnsafe.user.id,
       username: tg.initDataUnsafe.user.username || null,
       full_name: fullName,
-      email: email,
+      phone: phone,
       points: 0,
       membership_status: 'New'
     };
