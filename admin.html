@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     :root {
       --bg-dark: #001028;
@@ -71,7 +72,7 @@
       border: 1px solid #444;
       background: #112;
       color: white;
-      font-size: 16px; /* Для мобильных чтобы не зумилось */
+      font-size: 16px;
       -webkit-appearance: none;
       appearance: none;
     }
@@ -205,13 +206,18 @@
       color: white;
     }
 
+    .btn-qr {
+      background: #9C27B0;
+      color: white;
+    }
+
     .btn-cancel {
       background: #FF9800;
       color: white;
     }
 
     .btn-delete {
-      background: #9C27B0;
+      background: #f44336;
       color: white;
     }
 
@@ -313,21 +319,6 @@
       }
     }
 
-    .qr-scanner-section {
-      text-align: center;
-      padding: 20px;
-      background: rgba(0,0,0,0.3);
-      border-radius: 10px;
-      margin-top: 20px;
-    }
-
-    #qr-video {
-      width: 100%;
-      max-width: 300px;
-      border-radius: 8px;
-      margin: 15px 0;
-    }
-
     .event-tabs {
       display: flex;
       border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -398,6 +389,55 @@
       opacity: 0.5;
     }
 
+    /* Модальное окно для QR */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: var(--bg-dark);
+      padding: 25px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 2px solid var(--chelsea-blue);
+    }
+
+    .close-modal {
+      float: right;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--gold);
+    }
+
+    /* QR контейнер */
+    #qr-code-container {
+      text-align: center;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+
+    .qr-info {
+      text-align: center;
+      margin: 10px 0;
+      padding: 10px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+    }
+
     /* Мобильная оптимизация */
     @media (max-width: 480px) {
       body {
@@ -438,12 +478,16 @@
       
       input, textarea, select {
         padding: 12px;
-        font-size: 16px; /* Предотвращает зум на iOS */
+        font-size: 16px;
       }
       
       .event-tab {
         padding: 10px 15px;
         font-size: 0.9rem;
+      }
+      
+      .modal-content {
+        padding: 15px;
       }
     }
 
@@ -458,7 +502,6 @@
       }
     }
 
-    /* Улучшение скроллбара */
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
@@ -527,6 +570,7 @@
         <input type="text" id="bar_address" placeholder="Адрес бара">
         <textarea id="description" placeholder="Описание мероприятия" rows="3"></textarea>
         <input type="number" id="max_participants" placeholder="Макс. участников (опционально)">
+        <input type="number" id="points_award" placeholder="Баллы за посещение" value="10" min="0">
         <label style="display:block; margin:10px 0;">
           <input type="checkbox" id="is_open" checked> Открыта запись
         </label>
@@ -552,15 +596,6 @@
         
         <div id="registrations-list" class="registrations-list">Загрузка...</div>
         <button id="refresh-registrations" class="btn">🔄 Обновить список записей</button>
-        
-        <!-- QR сканер -->
-        <div class="qr-scanner-section">
-          <h3>📱 QR код сканер</h3>
-          <video id="qr-video" style="display: none;"></video>
-          <button id="start-scanner" class="btn">Запустить сканер QR</button>
-          <button id="stop-scanner" class="btn" style="background: #f44336; display: none;">Остановить сканер</button>
-          <div id="scanner-result" style="margin-top: 15px;"></div>
-        </div>
       </div>
 
       <!-- Календарь мероприятий -->
@@ -632,6 +667,26 @@
       <button id="logout-button" style="background:#c00; margin-top:40px; width:100%;">Выйти из админ-панели</button>
     </div>
   </div>
+
+  <!-- Модальное окно для QR кода мероприятия -->
+  <div id="qr-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeQRModal()">&times;</span>
+      <h3>📱 QR код мероприятия</h3>
+      <div class="qr-info" id="qr-event-info">
+        <h4>Загрузка информации...</h4>
+        <p id="qr-event-time"></p>
+        <p id="qr-checkin-window"></p>
+      </div>
+      <div id="qr-code-container"></div>
+      <div style="text-align: center; margin-top: 15px;">
+        <p style="color: #aaa; font-size: 0.9rem;">
+          ⚠️ Пользователи могут чекиниться за 2 часа до и в течение 2 часов после начала мероприятия
+        </p>
+      </div>
+    </div>
+  </div>
+
 <script>
     // === Константы ===
     const supabaseUrl = 'https://zuapiixwzkleygaijulx.supabase.co';
@@ -664,7 +719,39 @@
       });
     }
     
-    // Определение статуса мероприятия
+    // Проверка доступности чекина (за 2 часа до и 2 часа после)
+    function isCheckinAvailable(eventTime) {
+      const now = getCurrentTimeUTC5();
+      const eventTimeUTC5 = convertToUTC5(eventTime);
+      
+      // За 2 часа до мероприятия
+      const twoHoursBefore = new Date(eventTimeUTC5.getTime() - (2 * 60 * 60 * 1000));
+      // Через 2 часа после мероприятия
+      const twoHoursAfter = new Date(eventTimeUTC5.getTime() + (2 * 60 * 60 * 1000));
+      
+      return now >= twoHoursBefore && now <= twoHoursAfter;
+    }
+    
+    // Форматирование оставшегося времени до/после мероприятия
+    function getCheckinWindowText(eventTime) {
+      const now = getCurrentTimeUTC5();
+      const eventTimeUTC5 = convertToUTC5(eventTime);
+      
+      const twoHoursBefore = new Date(eventTimeUTC5.getTime() - (2 * 60 * 60 * 1000));
+      const twoHoursAfter = new Date(eventTimeUTC5.getTime() + (2 * 60 * 60 * 1000));
+      
+      if (now < twoHoursBefore) {
+        const msUntilCheckin = twoHoursBefore - now;
+        const hours = Math.floor(msUntilCheckin / (1000 * 60 * 60));
+        const minutes = Math.floor((msUntilCheckin % (1000 * 60 * 60)) / (1000 * 60));
+        return `Чекин откроется через ${hours}ч ${minutes}м`;
+      } else if (now > twoHoursAfter) {
+        return 'Чекин закрыт (прошло более 2 часов после мероприятия)';
+      } else {
+        return 'Чекин доступен сейчас';
+      }
+    }
+    
     function getEventStatus(eventTime) {
       const now = getCurrentTimeUTC5();
       const eventTimeUTC5 = convertToUTC5(eventTime);
@@ -908,6 +995,9 @@
         const itemClass = category === 'past' ? 'event-item past' : 
                          category === 'current' ? 'event-item current' : 'event-item';
         
+        // Проверяем доступность чекина
+        const checkinAvailable = isCheckinAvailable(event.match_date);
+        
         html += `
           <div class="${itemClass}">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; flex-wrap: wrap;">
@@ -936,9 +1026,18 @@
                 </div>
               </div>
               ${event.description ? `<div style="margin-top: 8px; color: #aaa; font-size: 0.85rem;">📝 ${event.description}</div>` : ''}
+              <div style="margin-top: 8px; color: #D4A017; font-size: 0.85rem;">
+                🏆 Баллов за посещение: ${event.points_award || 10}
+              </div>
+              <div style="margin-top: 8px; color: ${checkinAvailable ? '#4CAF50' : '#f44336'}; font-size: 0.85rem;">
+                ${checkinAvailable ? '✅ Чекин доступен' : '❌ Чекин закрыт'} ${getCheckinWindowText(event.match_date)}
+              </div>
             </div>
             
             <div class="action-buttons">
+              <button class="btn-qr" onclick="showEventQR('${event.id}', '${event.match_name.replace(/'/g, "\\'")}', '${event.match_date}')">
+                📱 Показать QR для чекина
+              </button>
               <button class="btn-delete-event" onclick="deleteEvent('${event.id}', '${event.match_name.replace(/'/g, "\\'")}')">
                 🗑️ Удалить мероприятие
               </button>
@@ -948,6 +1047,72 @@
       });
       
       container.innerHTML = html;
+    }
+    
+    // === Показать QR код мероприятия ===
+    function showEventQR(eventId, eventName, eventDate) {
+      const modal = document.getElementById('qr-modal');
+      const qrContainer = document.getElementById('qr-code-container');
+      const eventInfo = document.getElementById('qr-event-info');
+      const eventTime = document.getElementById('qr-event-time');
+      const checkinWindow = document.getElementById('qr-checkin-window');
+      
+      // Очищаем контейнер QR
+      qrContainer.innerHTML = '';
+      eventInfo.innerHTML = '';
+      
+      // Создаем компактные данные для QR
+      const qrData = {
+        e: eventId,  // event_id
+        t: Math.floor(Date.now() / 1000)  // timestamp в секундах
+      };
+      
+      // Форматируем дату мероприятия
+      const eventTimeUTC5 = convertToUTC5(eventDate);
+      const formattedDate = eventTimeUTC5.toLocaleString('ru-RU', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      // Показываем информацию о мероприятии
+      eventInfo.innerHTML = `
+        <h4>${eventName}</h4>
+        <p>📅 ${formattedDate} (UTC+5)</p>
+        <p>${getCheckinWindowText(eventDate)}</p>
+      `;
+      
+      try {
+        // Генерируем QR код
+        new QRCode(qrContainer, {
+          text: JSON.stringify(qrData),
+          width: 256,
+          height: 256,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.H
+        });
+        
+        // Показываем модальное окно
+        modal.style.display = 'flex';
+        
+      } catch (error) {
+        console.error('Error generating QR code:', error);
+        qrContainer.innerHTML = `
+          <div style="color: red; padding: 20px;">
+            <p>Ошибка генерации QR кода:</p>
+            <p>${error.message}</p>
+            <p>Данные: ${JSON.stringify(qrData)}</p>
+          </div>
+        `;
+      }
+    }
+    
+    function closeQRModal() {
+      document.getElementById('qr-modal').style.display = 'none';
+      document.getElementById('qr-code-container').innerHTML = '';
     }
     
     // === Удаление мероприятия ===
@@ -1010,7 +1175,8 @@
               id,
               match_name,
               match_date,
-              bar_address
+              bar_address,
+              points_award
             )
           `)
           .order('created_at', { ascending: false });
@@ -1090,8 +1256,8 @@
                            reg.status === 'cancelled' ? 'status-cancelled' :
                            'status-checked_in';
         
-        const now = new Date();
-        const isEventPast = eventDate < now;
+        // Проверяем доступность чекина для этого мероприятия
+        const checkinAvailable = isCheckinAvailable(event.match_date);
         
         const registrationItem = document.createElement('div');
         registrationItem.className = 'registration-item';
@@ -1106,7 +1272,8 @@
             <div>
               <strong>🎫 ${event.match_name}</strong><br>
               <small>📅 ${formattedDate}</small><br>
-              <small>📍 ${event.bar_address}</small>
+              <small>📍 ${event.bar_address}</small><br>
+              <small>🏆 Баллов за посещение: ${event.points_award || 10}</small>
             </div>
           </div>
           
@@ -1116,22 +1283,13 @@
               Запись создана: ${new Date(reg.created_at).toLocaleDateString('ru-RU')}
               ${reg.checkin_time ? `• Отметка: ${new Date(reg.checkin_time).toLocaleString('ru-RU')}` : ''}
             </small>
+            <small style="color: ${checkinAvailable ? '#4CAF50' : '#f44336'}; display: block; margin-top: 5px;">
+              ${checkinAvailable ? '✅ Чекин доступен' : '❌ Чекин закрыт'} ${getCheckinWindowText(event.match_date)}
+            </small>
           </div>
           
           <div class="action-buttons">
-            ${reg.status === 'registered' && !isEventPast ? `
-              <button class="btn-checkin" onclick="checkInUser('${reg.id}', '${user.full_name || 'Пользователь'}', '${event.match_name}')">
-                ✅ Отметить посещение
-              </button>
-            ` : ''}
-            
-            ${reg.status === 'registered' ? `
-              <button class="btn-cancel" onclick="cancelRegistration('${reg.id}', '${user.full_name || 'Пользователь'}', '${event.match_name}')">
-                ❌ Отменить запись
-              </button>
-            ` : ''}
-            
-            ${reg.status === 'cancelled' && !isEventPast ? `
+            ${reg.status === 'cancelled' ? `
               <button class="btn-approve" onclick="reRegisterUser('${reg.id}', '${user.full_name || 'Пользователь'}', '${event.match_name}')">
                 ↻ Восстановить запись
               </button>
@@ -1147,19 +1305,23 @@
       });
     }
 
-    // === Перенесенные функции из предыдущей версии ===
-    
-    // Создание мероприятия
+    // === Создание мероприятия ===
     async function createEvent() {
       const name = document.getElementById('match_name')?.value?.trim();
       const date = document.getElementById('match_date')?.value;
       const addr = document.getElementById('bar_address')?.value?.trim();
       const desc = document.getElementById('description')?.value?.trim() || null;
       const max = parseInt(document.getElementById('max_participants')?.value) || null;
+      const pointsAward = parseInt(document.getElementById('points_award')?.value) || 10;
       const open = document.getElementById('is_open')?.checked ?? true;
 
       if (!name || !date || !addr) {
         alert('Заполните обязательные поля: название, дата и адрес');
+        return;
+      }
+
+      if (pointsAward < 0) {
+        alert('Количество баллов не может быть отрицательным');
         return;
       }
 
@@ -1169,6 +1331,7 @@
         bar_address: addr,
         description: desc,
         max_participants: max,
+        points_award: pointsAward,
         is_open: open
       });
 
@@ -1181,6 +1344,7 @@
         document.getElementById('bar_address').value = '';
         document.getElementById('description').value = '';
         document.getElementById('max_participants').value = '';
+        document.getElementById('points_award').value = '10';
         
         loadAllEvents();
         loadStats();
@@ -1188,7 +1352,7 @@
       }
     }
 
-    // Загрузка заявок на Membership
+    // === Загрузка заявок на Membership ===
     async function loadPending() {
       try {
         const { data, error } = await supabaseClient
@@ -1244,7 +1408,7 @@
       }
     }
 
-    // Загрузка всех пользователей
+    // === Загрузка всех пользователей ===
     async function loadAllUsers() {
       try {
         const { data, error } = await supabaseClient
@@ -1272,7 +1436,7 @@
       }
     }
 
-    // Отображение пользователей
+    // === Отображение пользователей ===
     function renderUsers(users) {
       const cont = document.getElementById('all-users-list');
       cont.innerHTML = '';
@@ -1310,7 +1474,7 @@
       });
     }
 
-    // Поиск пользователей
+    // === Поиск пользователей ===
     function searchUsers() {
       const searchTerm = document.getElementById('search-user').value.toLowerCase();
       if (!window.allUsers) return;
@@ -1325,7 +1489,7 @@
       renderUsers(filtered);
     }
 
-    // Одобрение заявки
+    // === Одобрение заявки ===
     async function approveApplication(userId) {
       if (!confirm('Одобрить заявку и начислить 100 бонусных очков?')) return;
       
@@ -1364,7 +1528,7 @@
       }
     }
 
-    // Отклонение заявки
+    // === Отклонение заявки ===
     async function rejectApplication(userId) {
       if (!confirm('Отклонить заявку на членство?')) return;
       
@@ -1391,7 +1555,7 @@
       }
     }
 
-    // Обновление пользователя
+    // === Обновление пользователя ===
     async function updateUser() {
       const telegramIdInput = document.getElementById('user-id-input').value.trim();
       const addPoints = parseInt(document.getElementById('add-points').value) || 0;
@@ -1468,76 +1632,7 @@
       }
     }
 
-    // Функции для работы с записями
-    async function checkInUser(registrationId, userName, eventName) {
-      if (!confirm(`Отметить пользователя "${userName}" как посетившего мероприятие "${eventName}"?`)) {
-        return;
-      }
-      
-      try {
-        const { error: updateError } = await supabaseClient
-          .from('registrations')
-          .update({ 
-            status: 'checked_in',
-            checkin_time: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', registrationId);
-
-        if (updateError) throw updateError;
-
-        const { data: registrationData } = await supabaseClient
-          .from('registrations')
-          .select('user_id')
-          .eq('id', registrationId)
-          .single();
-
-        if (registrationData) {
-          await supabaseClient
-            .from('users')
-            .update({
-              points: supabaseClient.sql`points + 50`,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', registrationData.user_id);
-        }
-
-        alert(`✅ Пользователь "${userName}" отмечен как посетивший мероприятие! +50 очков`);
-        loadRegistrations();
-        loadStats();
-        
-      } catch (error) {
-        console.error('Error checking in user:', error);
-        alert('❌ Ошибка при отметке посещения: ' + error.message);
-      }
-    }
-
-    async function cancelRegistration(registrationId, userName, eventName) {
-      if (!confirm(`Отменить запись пользователя "${userName}" на мероприятие "${eventName}"?`)) {
-        return;
-      }
-      
-      try {
-        const { error } = await supabaseClient
-          .from('registrations')
-          .update({ 
-            status: 'cancelled',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', registrationId);
-
-        if (error) throw error;
-
-        alert(`✅ Запись пользователя "${userName}" отменена`);
-        loadRegistrations();
-        loadStats();
-        
-      } catch (error) {
-        console.error('Error cancelling registration:', error);
-        alert('❌ Ошибка при отмене записи: ' + error.message);
-      }
-    }
-
+    // === Восстановление записи пользователя ===
     async function reRegisterUser(registrationId, userName, eventName) {
       if (!confirm(`Восстановить запись пользователя "${userName}" на мероприятие "${eventName}"?`)) {
         return;
@@ -1565,6 +1660,7 @@
       }
     }
 
+    // === Удаление записи ===
     async function deleteRegistration(registrationId, userName, eventName) {
       if (!confirm(`Удалить запись пользователя "${userName}" на мероприятие "${eventName}"? Это действие нельзя отменить.`)) {
         return;
