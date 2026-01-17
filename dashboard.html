@@ -789,7 +789,7 @@
         .from('events')
         .select('*')
         .eq('is_open', true)
-        .gte('match_date', new Date().toISOString())
+        .gte('match_date', getCurrentTimeUTC5().toISOString())
         .order('match_date', { ascending: true })
         .limit(3);
 
