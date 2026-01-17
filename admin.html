@@ -10,6 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@master/qrcode.min.js"></script>
   <style>
+    /* (Все стили остаются без изменений) */
     :root {
       --bg-dark: #001028;
       --chelsea-blue: #034694;
@@ -742,50 +743,55 @@
 
     const ADMIN_LOGIN = 'Admin';
     const ADMIN_PASS = '44mnUr8Xz';
-    const TIMEZONE_OFFSET = 5 * 60 * 60 * 1000; // UTC+5 для Казахстана
+    // УДАЛЕНА TIMEZONE_OFFSET
 
-    // === Часовой пояс UTC+5 ===
-    function getCurrentTimeUTC5() {
-      const now = new Date();
-      return new Date(now.getTime() + TIMEZONE_OFFSET);
-    }
+    // === Часовой пояс UTC+5 (Asia/Almaty) ===
+    // Убрана ручная конвертация, используем встроенные методы с указанием часового пояса
     
-    function convertToUTC5(dateString) {
+    function formatDateTimeInAlmaty(dateString) {
+      // Преобразуем строку из БД в объект Date
       const date = new Date(dateString);
-      return new Date(date.getTime() + TIMEZONE_OFFSET);
-    }
-    
-    function formatDateTimeUTC5(dateString) {
-      const date = convertToUTC5(dateString);
-      return date.toLocaleString('ru-RU', {
+      
+      // Используем Intl.DateTimeFormat для форматирования в часовом поясе Алматы
+      return new Intl.DateTimeFormat('ru-RU', {
+        timeZone: 'Asia/Almaty',
         weekday: 'short',
         day: 'numeric',
         month: 'short',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        hour12: false
+      }).format(date);
+    }
+    
+    // Функция для получения текущего времени в Алматы (для отображения)
+    function getCurrentTimeInAlmaty() {
+      return new Date().toLocaleString('ru-RU', {
+        timeZone: 'Asia/Almaty',
+        hour12: false
       });
     }
     
     // Проверка доступности чекина (за 2 часа до и 2 часа после)
     function isCheckinAvailable(eventTime) {
-      const now = getCurrentTimeUTC5();
-      const eventTimeUTC5 = convertToUTC5(eventTime);
+      const now = new Date(); // Текущее время в UTC
+      const eventTimeUTC = new Date(eventTime); // Время мероприятия из БД (уже в UTC)
       
-      // За 2 часа до мероприятия
-      const twoHoursBefore = new Date(eventTimeUTC5.getTime() - (2 * 60 * 60 * 1000));
-      // Через 2 часа после мероприятия
-      const twoHoursAfter = new Date(eventTimeUTC5.getTime() + (2 * 60 * 60 * 1000));
+      // За 2 часа до мероприятия (в UTC)
+      const twoHoursBefore = new Date(eventTimeUTC.getTime() - (2 * 60 * 60 * 1000));
+      // Через 2 часа после мероприятия (в UTC)
+      const twoHoursAfter = new Date(eventTimeUTC.getTime() + (2 * 60 * 60 * 1000));
       
       return now >= twoHoursBefore && now <= twoHoursAfter;
     }
     
     // Форматирование оставшегося времени до/после мероприятия
     function getCheckinWindowText(eventTime) {
-      const now = getCurrentTimeUTC5();
-      const eventTimeUTC5 = convertToUTC5(eventTime);
+      const now = new Date(); // Текущее время в UTC
+      const eventTimeUTC = new Date(eventTime); // Время мероприятия из БД (уже в UTC)
       
-      const twoHoursBefore = new Date(eventTimeUTC5.getTime() - (2 * 60 * 60 * 1000));
-      const twoHoursAfter = new Date(eventTimeUTC5.getTime() + (2 * 60 * 60 * 1000));
+      const twoHoursBefore = new Date(eventTimeUTC.getTime() - (2 * 60 * 60 * 1000));
+      const twoHoursAfter = new Date(eventTimeUTC.getTime() + (2 * 60 * 60 * 1000));
       
       if (now < twoHoursBefore) {
         const msUntilCheckin = twoHoursBefore - now;
@@ -800,9 +806,9 @@
     }
     
     function getEventStatus(eventTime) {
-      const now = getCurrentTimeUTC5();
-      const eventTimeUTC5 = convertToUTC5(eventTime);
-      const diff = eventTimeUTC5 - now;
+      const now = new Date(); // Текущее время в UTC
+      const eventTimeUTC = new Date(eventTime); // Время мероприятия из БД (уже в UTC)
+      const diff = eventTimeUTC - now;
       const twoHours = 2 * 60 * 60 * 1000;
       const threeHours = 3 * 60 * 60 * 1000;
       
@@ -947,8 +953,8 @@
         filterSelect.innerHTML = '<option value="">Все мероприятия</option>';
         
         data.forEach(event => {
-          const eventDate = new Date(event.match_date);
-          const formattedDate = eventDate.toLocaleDateString('ru-RU');
+          // Используем новую функцию форматирования
+          const formattedDate = formatDateTimeInAlmaty(event.match_date);
           const option = document.createElement('option');
           option.value = event.id;
           option.textContent = `${event.match_name} (${formattedDate})`;
@@ -984,13 +990,12 @@
           return;
         }
 
-        const now = getCurrentTimeUTC5();
+        const now = new Date(); // Текущее время в UTC
         const upcoming = [];
         const current = [];
         const past = [];
         
         for (const event of events) {
-          const eventTimeUTC5 = convertToUTC5(event.match_date);
           const status = getEventStatus(event.match_date);
           
           // Получаем количество записанных участников
@@ -1049,8 +1054,7 @@
       let html = '';
       
       events.forEach(event => {
-        const eventTimeUTC5 = convertToUTC5(event.match_date);
-        const formattedDate = formatDateTimeUTC5(event.match_date);
+        const formattedDate = formatDateTimeInAlmaty(event.match_date);
         const statusBadge = getEventStatusBadge(event.match_date);
         const isFull = event.max_participants && event.registeredCount >= event.max_participants;
         
@@ -1066,7 +1070,7 @@
               <div style="flex: 1; min-width: 0;">
                 <strong style="font-size: 1.1rem; display: block; margin-bottom: 5px;">${event.match_name}</strong>
                 <div style="color: #aaa; font-size: 0.9rem;">
-                  📅 ${formattedDate} (UTC+5)<br>
+                  📅 ${formattedDate} (UTC+5, Алматы)<br>
                   📍 ${event.bar_address}
                 </div>
               </div>
@@ -1135,20 +1139,13 @@
         t: Math.floor(Date.now() / 1000)  // timestamp в секундах
       };
       
-      // Форматируем дату мероприятия
-      const eventTimeUTC5 = convertToUTC5(eventDate);
-      const formattedDate = eventTimeUTC5.toLocaleString('ru-RU', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      // Форматируем дату мероприятия в Алматы
+      const formattedDate = formatDateTimeInAlmaty(eventDate);
       
       // Показываем информацию о мероприятии
       eventInfo.innerHTML = `
         <h4>${eventName}</h4>
-        <p>📅 ${formattedDate} (UTC+5)</p>
+        <p>📅 ${formattedDate} (UTC+5, Алматы)</p>
         <p>${getCheckinWindowText(eventDate)}</p>
       `;
       
@@ -1319,14 +1316,7 @@
         
         if (!user || !event) return;
         
-        const eventDate = new Date(event.match_date);
-        const formattedDate = eventDate.toLocaleDateString('ru-RU', {
-          weekday: 'short',
-          day: 'numeric',
-          month: 'short',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
+        const formattedDate = formatDateTimeInAlmaty(event.match_date);
         
         const statusText = reg.status === 'registered' ? 'Записан' : 
                           reg.status === 'cancelled' ? 'Отменен' : 
@@ -1351,7 +1341,7 @@
             </div>
             <div>
               <strong>🎫 ${event.match_name}</strong><br>
-              <small>📅 ${formattedDate}</small><br>
+              <small>📅 ${formattedDate} (UTC+5, Алматы)</small><br>
               <small>📍 ${event.bar_address}</small><br>
               <small>🏆 Баллов за посещение: ${event.points_award || 10}</small>
             </div>
@@ -1411,13 +1401,21 @@
         return;
       }
 
-      // Преобразуем локальное время (UTC+5) в UTC для сохранения в БД
+      // datetime-local возвращает строку в локальном времени браузера
+      // Создаем объект Date, который корректно обрабатывает локальное время
       const localDate = new Date(date);
-      const utcDate = new Date(localDate.getTime() - TIMEZONE_OFFSET);
       
+      // Проверяем, что дата корректна
+      if (isNaN(localDate.getTime())) {
+        alert('Некорректная дата');
+        return;
+      }
+      
+      // Отправляем дату в ISO формате (в UTC)
+      // Supabase сам конвертирует timestamptz в правильный часовой пояс
       const { error } = await supabaseClient.from('events').insert({
         match_name: name,
-        match_date: utcDate.toISOString(),
+        match_date: localDate.toISOString(), // ISO строка с UTC временем
         bar_address: addr,
         description: desc,
         max_participants: max,
