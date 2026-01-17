@@ -605,8 +605,12 @@
           <textarea id="description" placeholder="Описание мероприятия" rows="3"></textarea>
           <input type="number" id="max_participants" placeholder="Макс. участников (опционально)">
           <input type="number" id="points_award" placeholder="Баллы за посещение" value="10" min="0">
-          <label style="display:block; margin:10px 0;">
-            <input type="checkbox" id="is_open" checked> Открыта запись
+          <label style="display:block; margin:10px 0; border: 1px solid #D4A017; padding: 10px; border-radius: 5px;">
+            <input type="checkbox" id="is_open" checked> <strong>Открыта запись на мероприятие</strong>
+            <div style="font-size: 0.85rem; color: #aaa; margin-top: 5px;">
+              ℹ️ <strong>Запись</strong> = возможность записаться на мероприятие<br>
+              ℹ️ <strong>Чекин</strong> = отметка о посещении (за 2ч до и 2ч после)
+            </div>
           </label>
           <button id="create-event-button">Создать мероприятие</button>
         </div>
@@ -1407,9 +1411,13 @@
         return;
       }
 
+      // Преобразуем локальное время (UTC+5) в UTC для сохранения в БД
+      const localDate = new Date(date);
+      const utcDate = new Date(localDate.getTime() - TIMEZONE_OFFSET);
+      
       const { error } = await supabaseClient.from('events').insert({
         match_name: name,
-        match_date: new Date(date).toISOString(),
+        match_date: utcDate.toISOString(),
         bar_address: addr,
         description: desc,
         max_participants: max,
@@ -1427,6 +1435,7 @@
         document.getElementById('description').value = '';
         document.getElementById('max_participants').value = '';
         document.getElementById('points_award').value = '10';
+        document.getElementById('is_open').checked = true;
         
         loadAllEvents();
         loadStats();
