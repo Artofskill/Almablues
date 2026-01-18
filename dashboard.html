@@ -270,7 +270,7 @@
       text-align: center;
       margin-top: 3rem;
       padding-top: 1rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-top: 1px solid rgba(255,255,255,0.1);
       color: #777;
       font-size: 0.9rem;
     }
@@ -548,7 +548,7 @@
       <div style="margin-top: 15px;">
         <p style="color: #FFC107;">Наведите камеру на QR код мероприятия</p>
         <p style="color: #aaa; font-size: 0.9rem;">
-          ⚠️ Чекиниться можно за 2 часа до и в течение 2 часов после мероприятия
+          ⚠️ Чекиниться можно в любое время до и в течение 2 часов после мероприятия
         </p>
       </div>
     </div>
@@ -607,17 +607,29 @@
     });
   }
   
-  // Проверка доступности чекина (за 2 часа до и 2 часа после)
+  // Проверка доступности чекина (в любое время до и в течение 2 часов после)
   function isCheckinAvailable(eventTime) {
     const now = getCurrentTimeUTC5();
     const eventTimeUTC5 = convertToUTC5(eventTime);
     
-    // За 2 часа до мероприятия
-    const twoHoursBefore = new Date(eventTimeUTC5.getTime() - (2 * 60 * 60 * 1000));
     // Через 2 часа после мероприятия
     const twoHoursAfter = new Date(eventTimeUTC5.getTime() + (2 * 60 * 60 * 1000));
     
-    return now >= twoHoursBefore && now <= twoHoursAfter;
+    return now <= twoHoursAfter;
+  }
+  
+  // Получение текста о доступности чекина
+  function getCheckinWindowText(eventTime) {
+    const now = getCurrentTimeUTC5();
+    const eventTimeUTC5 = convertToUTC5(eventTime);
+    
+    const twoHoursAfter = new Date(eventTimeUTC5.getTime() + (2 * 60 * 60 * 1000));
+    
+    if (now > twoHoursAfter) {
+      return 'Чекин закрыт (прошло более 2 часов после мероприятия)';
+    } else {
+      return 'Чекин доступен (до 2 часов после мероприятия)';
+    }
   }
   
   // Показ уведомления о чекине
@@ -844,14 +856,7 @@
             checkinStatusHtml = `<div style="color: #4CAF50; margin-top: 5px; font-size: 0.9rem;">Чекин доступен! Отсканируйте QR код мероприятия</div>`;
           } else {
             buttonHtml = `<button class="btn btn-small btn-disabled" disabled>Чекин закрыт</button>`;
-            const timeUntilCheckin = eventTimeUTC5.getTime() - (2 * 60 * 60 * 1000) - now.getTime();
-            if (timeUntilCheckin > 0) {
-              const hours = Math.floor(timeUntilCheckin / (1000 * 60 * 60));
-              const minutes = Math.floor((timeUntilCheckin % (1000 * 60 * 60)) / (1000 * 60));
-              checkinStatusHtml = `<div style="color: #FFC107; margin-top: 5px; font-size: 0.9rem;">Чекин откроется через ${hours}ч ${minutes}м</div>`;
-            } else {
-              checkinStatusHtml = `<div style="color: #f44336; margin-top: 5px; font-size: 0.9rem;">Чекин закрыт (прошло более 2 часов после мероприятия)</div>`;
-            }
+            checkinStatusHtml = `<div style="color: #f44336; margin-top: 5px; font-size: 0.9rem;">${getCheckinWindowText(event.match_date)}</div>`;
           }
         } else if (isCancelled) {
           buttonHtml = `<button class="btn btn-small btn-disabled" disabled>Отменено</button>`;
@@ -877,8 +882,9 @@
             <h4>${event.match_name}</h4>
             <div class="event-date">📅 ${formattedDate} (UTC+5)</div>
             <div class="event-address">📍 ${event.bar_address}</div>
-            ${event.max_participants ? `<div style="font-size: 0.8rem; color: #FFC107;">👥 Мест: ${event.max_participants}</div>` : ''}
-            ${event.points_award ? `<div style="font-size: 0.8rem; color: #D4A017;">🏆 Баллов за посещение: ${event.points_award}</div>` : ''}
+            ${event.description ? `<div style="font-size: 0.85rem; color: #aaa; margin-top: 5px;">📝 ${event.description}</div>` : ''}
+            ${event.max_participants ? `<div style="font-size: 0.8rem; color: #FFC107; margin-top: 5px;">👥 Мест: ${event.max_participants}</div>` : ''}
+            ${event.points_award ? `<div style="font-size: 0.8rem; color: #D4A017; margin-top: 5px;">🏆 Баллов за посещение: ${event.points_award}</div>` : ''}
           </div>
           ${checkinStatusHtml}
           <div class="event-actions">
@@ -1013,7 +1019,8 @@
             id,
             match_name,
             match_date,
-            bar_address
+            bar_address,
+            description
           )
         `)
         .eq('user_id', userId)
@@ -1060,7 +1067,8 @@
               <strong>${event.match_name}</strong><br>
               <small>📅 ${formattedDate} (UTC+5)</small><br>
               <small>📍 ${event.bar_address}</small><br>
-              <small style="color: ${checkinAvailable ? '#4CAF50' : '#f44336'}">
+              ${event.description ? `<small style="color: #aaa; display: block; margin-top: 5px;">📝 ${event.description}</small>` : ''}
+              <small style="color: ${checkinAvailable ? '#4CAF50' : '#f44336'}; display: block; margin-top: 5px;">
                 ${checkinAvailable ? '✅ Чекин доступен' : '❌ Чекин закрыт'}
               </small>
             </div>
@@ -1211,26 +1219,8 @@
       // Проверяем время чекина
       const checkinAvailable = isCheckinAvailable(event.match_date);
       if (!checkinAvailable) {
-        const eventTimeUTC5 = convertToUTC5(event.match_date);
-        const now = getCurrentTimeUTC5();
-        
-        // За 2 часа до
-        const twoHoursBefore = new Date(eventTimeUTC5.getTime() - (2 * 60 * 60 * 1000));
-        // Через 2 часа после
-        const twoHoursAfter = new Date(eventTimeUTC5.getTime() + (2 * 60 * 60 * 1000));
-        
-        let errorMessage = '❌ ';
-        if (now < twoHoursBefore) {
-          const msUntilCheckin = twoHoursBefore - now;
-          const hours = Math.floor(msUntilCheckin / (1000 * 60 * 60));
-          const minutes = Math.floor((msUntilCheckin % (1000 * 60 * 60)) / (1000 * 60));
-          errorMessage += `Мероприятие еще не началось. Чекин откроется через ${hours}ч ${minutes}м`;
-        } else if (now > twoHoursAfter) {
-          errorMessage += 'Чекин закрыт. Прошло более 2 часов после мероприятия';
-        }
-        
         document.getElementById('scanner-result').innerHTML = 
-          `<p style="color: #ff6666;">${errorMessage}</p>`;
+          `<p style="color: #ff6666;">❌ ${getCheckinWindowText(event.match_date)}</p>`;
         return;
       }
       
@@ -1272,7 +1262,7 @@
       
       if (updateError) throw updateError;
       
-      // Начисляем баллы за посещение
+      // Начисляем баллы за посещение (немедленно)
       const pointsAward = event.points_award || 10;
       await supabaseClient
         .from('users')
