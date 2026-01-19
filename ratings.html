@@ -34,200 +34,397 @@
       background: var(--bg-dark);
       color: var(--text-light);
       min-height: 100vh;
-      padding: 20px;
+      padding: 20px 15px;
     }
 
     .container {
-      max-width: 600px;
+      max-width: 100%;
       margin: 0 auto;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 25px;
+      padding: 10px 15px;
+      background: rgba(212, 160, 23, 0.15);
+      color: var(--gold);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid rgba(212, 160, 23, 0.3);
+      transition: all 0.3s;
+    }
+
+    .back-btn:hover {
+      background: rgba(212, 160, 23, 0.25);
+      border-color: var(--gold);
+      transform: translateX(-3px);
+    }
+
+    .back-btn::before {
+      content: "←";
+      font-size: 1.2rem;
+      font-weight: bold;
     }
 
     header {
       text-align: center;
       margin-bottom: 2rem;
+      padding: 0 5px;
+    }
+
+    .header-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .trophy-icon {
+      font-size: 2.5rem;
+      margin-bottom: 5px;
     }
 
     h1 {
       font-family: 'Oswald', sans-serif;
       color: var(--gold);
-      font-size: 2.5rem;
+      font-size: 2.2rem;
+      line-height: 1;
+      margin-bottom: 0;
+    }
+
+    .header-subtitle {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.8rem;
+      color: var(--white);
       margin-bottom: 0.5rem;
     }
 
-    .back-btn {
-      display: inline-block;
-      margin-bottom: 20px;
-      color: var(--gold);
-      text-decoration: none;
-      font-weight: 500;
-      font-size: 1.1rem;
+    .header-description {
+      color: #aaa;
+      font-size: 0.95rem;
+      max-width: 400px;
+      margin: 0 auto;
     }
 
-    .back-btn:hover {
-      text-decoration: underline;
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 20px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 3px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
     .ratings-table {
       width: 100%;
+      min-width: 500px;
       border-collapse: collapse;
-      margin-top: 20px;
       border-radius: 10px;
       overflow: hidden;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     }
 
     .ratings-table th {
-      background: var(--chelsea-blue);
+      background: linear-gradient(135deg, var(--chelsea-blue), var(--chelsea-blue-dark));
       color: white;
-      padding: 15px;
+      padding: 15px 12px;
       text-align: left;
       font-family: 'Oswald', sans-serif;
-      font-size: 1.1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .ratings-table th:first-child {
+      border-radius: 10px 0 0 0;
+    }
+
+    .ratings-table th:last-child {
+      border-radius: 0 10px 0 0;
     }
 
     .ratings-table td {
-      padding: 15px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 14px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      white-space: nowrap;
     }
 
     .ratings-table tr:hover {
-      background: rgba(3, 70, 148, 0.1);
+      background: rgba(3, 70, 148, 0.08);
+    }
+
+    .ratings-table tr:last-child td {
+      border-bottom: none;
     }
 
     .rank {
-      width: 60px;
+      width: 70px;
       text-align: center;
-      font-weight: bold;
-      font-size: 1.2rem;
+      font-weight: 700;
+      font-size: 1.1rem;
+      font-family: 'Oswald', sans-serif;
     }
 
     .rank-1 {
       color: #FFD700;
-      background: rgba(255, 215, 0, 0.1);
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05));
     }
 
     .rank-2 {
       color: #C0C0C0;
-      background: rgba(192, 192, 192, 0.1);
+      background: linear-gradient(135deg, rgba(192, 192, 192, 0.15), rgba(192, 192, 192, 0.05));
     }
 
     .rank-3 {
       color: #CD7F32;
-      background: rgba(205, 127, 50, 0.1);
+      background: linear-gradient(135deg, rgba(205, 127, 50, 0.15), rgba(205, 127, 50, 0.05));
     }
 
     .user-name {
       font-weight: 500;
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .user-points {
       text-align: center;
-      font-weight: bold;
+      font-weight: 700;
+      font-size: 1.1rem;
       color: var(--gold);
+      width: 100px;
     }
 
     .user-status {
       text-align: center;
+      width: 130px;
     }
 
     .status-badge {
       display: inline-block;
-      padding: 5px 12px;
+      padding: 6px 12px;
       border-radius: 20px;
       font-size: 0.8rem;
-      font-weight: 500;
+      font-weight: 600;
+      min-width: 100px;
     }
 
     .status-novice {
-      background: rgba(33, 150, 243, 0.2);
+      background: linear-gradient(135deg, rgba(33, 150, 243, 0.25), rgba(33, 150, 243, 0.15));
       color: #2196F3;
-      border: 1px solid #2196F3;
+      border: 1px solid rgba(33, 150, 243, 0.3);
     }
 
     .status-fan {
-      background: rgba(76, 175, 80, 0.2);
+      background: linear-gradient(135deg, rgba(76, 175, 80, 0.25), rgba(76, 175, 80, 0.15));
       color: #4CAF50;
-      border: 1px solid #4CAF50;
+      border: 1px solid rgba(76, 175, 80, 0.3);
     }
 
     .status-ultras {
-      background: rgba(255, 87, 34, 0.2);
+      background: linear-gradient(135deg, rgba(255, 87, 34, 0.25), rgba(255, 87, 34, 0.15));
       color: #FF5722;
-      border: 1px solid #FF5722;
+      border: 1px solid rgba(255, 87, 34, 0.3);
     }
 
     .status-pending {
-      background: rgba(255, 193, 7, 0.2);
+      background: linear-gradient(135deg, rgba(255, 193, 7, 0.25), rgba(255, 193, 7, 0.15));
       color: #FFC107;
-      border: 1px solid #FFC107;
+      border: 1px solid rgba(255, 193, 7, 0.3);
     }
 
     .status-new {
-      background: rgba(158, 158, 158, 0.2);
+      background: linear-gradient(135deg, rgba(158, 158, 158, 0.25), rgba(158, 158, 158, 0.15));
       color: #9E9E9E;
-      border: 1px solid #9E9E9E;
+      border: 1px solid rgba(158, 158, 158, 0.3);
     }
 
     .status-rejected {
-      background: rgba(244, 67, 54, 0.2);
+      background: linear-gradient(135deg, rgba(244, 67, 54, 0.25), rgba(244, 67, 54, 0.15));
       color: #F44336;
-      border: 1px solid #F44336;
+      border: 1px solid rgba(244, 67, 54, 0.3);
     }
 
     .loading {
       text-align: center;
-      padding: 40px;
+      padding: 50px 20px;
       font-size: 1.2rem;
       color: var(--gold);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(212, 160, 23, 0.2);
+      border-radius: 50%;
+      border-top-color: var(--gold);
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
     .no-data {
       text-align: center;
-      padding: 40px;
+      padding: 60px 20px;
       font-size: 1.1rem;
       color: #aaa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .no-data-icon {
+      font-size: 3.5rem;
+      opacity: 0.5;
+    }
+
+    .current-user-row {
+      background: linear-gradient(135deg, rgba(212, 160, 23, 0.12), rgba(212, 160, 23, 0.05)) !important;
+      border-left: 4px solid var(--gold) !important;
     }
 
     footer {
       text-align: center;
-      margin-top: 3rem;
-      padding-top: 1rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 2.5rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
       color: #777;
       font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    /* Мобильная адаптация */
+    @media (max-width: 600px) {
+      body {
+        padding: 15px 10px;
+      }
+      
+      h1 {
+        font-size: 1.9rem;
+      }
+      
+      .header-subtitle {
+        font-size: 1.6rem;
+      }
+      
+      .header-description {
+        font-size: 0.9rem;
+        padding: 0 10px;
+      }
+      
+      .back-btn {
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+      }
+      
+      .ratings-table th {
+        padding: 12px 10px;
+        font-size: 0.95rem;
+      }
+      
+      .ratings-table td {
+        padding: 12px 10px;
+        font-size: 0.9rem;
+      }
+      
+      .rank {
+        width: 60px;
+        font-size: 1rem;
+      }
+      
+      .user-points {
+        width: 80px;
+        font-size: 1rem;
+      }
+      
+      .user-status {
+        width: 120px;
+      }
+      
+      .status-badge {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+        min-width: 90px;
+      }
+    }
+
+    @media (max-width: 400px) {
+      h1 {
+        font-size: 1.7rem;
+      }
+      
+      .header-subtitle {
+        font-size: 1.4rem;
+      }
+      
+      .trophy-icon {
+        font-size: 2.2rem;
+      }
+      
+      .back-btn {
+        width: 100%;
+        justify-content: center;
+      }
     }
   </style>
 </head>
 
 <body>
 <div class="container">
-  <a href="dashboard.html" class="back-btn">← Назад в Dashboard</a>
+  <a href="dashboard.html" class="back-btn">Назад</a>
   
   <header>
-    <h1>🏆 Рейтинг фанатов</h1>
-    <p>Топ самых активных участников фан-клуба</p>
+    <div class="header-content">
+      <div class="trophy-icon">🏆</div>
+      <h1>Рейтинг</h1>
+      <div class="header-subtitle">Фанатов</div>
+      <p class="header-description">Топ самых активных участников фан-клуба Chelsea FC Kazakhstan</p>
+    </div>
   </header>
 
-  <div id="loading" class="loading">Загрузка рейтинга...</div>
-  <div id="no-data" class="no-data" style="display: none;">Нет данных для отображения</div>
+  <div id="loading" class="loading">
+    <div class="loading-spinner"></div>
+    <div>Загрузка рейтинга...</div>
+  </div>
+  
+  <div id="no-data" class="no-data" style="display: none;">
+    <div class="no-data-icon">📊</div>
+    <div>Нет данных для отображения</div>
+    <div style="font-size: 0.9rem; color: #888; margin-top: 5px;">Пока никто не заработал очков</div>
+  </div>
 
-  <table id="ratings-table" class="ratings-table" style="display: none;">
-    <thead>
-      <tr>
-        <th class="rank">Место</th>
-        <th>Имя</th>
-        <th class="user-points">Очки</th>
-        <th class="user-status">Статус</th>
-      </tr>
-    </thead>
-    <tbody id="ratings-body">
-      <!-- Данные будут загружены через JavaScript -->
-    </tbody>
-  </table>
+  <div class="table-container" id="table-container" style="display: none;">
+    <table id="ratings-table" class="ratings-table">
+      <thead>
+        <tr>
+          <th class="rank">Место</th>
+          <th>Имя</th>
+          <th class="user-points">Очки</th>
+          <th class="user-status">Статус</th>
+        </tr>
+      </thead>
+      <tbody id="ratings-body">
+        <!-- Данные будут загружены через JavaScript -->
+      </tbody>
+    </table>
+  </div>
 
   <footer>
     <p>Chelsea FC Supporters Club Kazakhstan • 2025</p>
-    <p>Рейтинг обновляется автоматически</p>
+    <p style="margin-top: 5px; font-size: 0.85rem;">Рейтинг обновляется автоматически после каждого мероприятия</p>
   </footer>
 </div>
 
@@ -283,7 +480,10 @@
 
       if (error) {
         console.error('Error loading ratings:', error);
-        document.getElementById('loading').textContent = 'Ошибка загрузки рейтинга';
+        document.getElementById('loading').innerHTML = `
+          <div style="color: #ff6b6b;">Ошибка загрузки рейтинга</div>
+          <div style="font-size: 0.9rem; color: #aaa; margin-top: 10px;">Попробуйте позже</div>
+        `;
         return;
       }
 
@@ -301,14 +501,15 @@
 
       if (!data || data.length === 0) {
         document.getElementById('loading').style.display = 'none';
-        document.getElementById('no-data').style.display = 'block';
+        document.getElementById('no-data').style.display = 'flex';
         return;
       }
 
       // Заполняем таблицу
       data.forEach((user, index) => {
         const rank = index + 1;
-        const statusInfo = getUserStatus(user.membership_status, user.points || 0);
+        const points = user.points || 0;
+        const statusInfo = getUserStatus(user.membership_status, points);
         
         // Определяем класс для места
         let rankClass = '';
@@ -317,31 +518,34 @@
         else if (rank === 3) rankClass = 'rank-3';
 
         const row = document.createElement('tr');
+        
+        // Добавляем класс для текущего пользователя
+        if (user.id === userId) {
+          row.classList.add('current-user-row');
+        }
+        
         row.innerHTML = `
           <td class="rank ${rankClass}">${rank}</td>
-          <td class="user-name">${user.full_name || 'Аноним'}</td>
-          <td class="user-points">${user.points || 0}</td>
+          <td class="user-name" title="${user.full_name || 'Аноним'}">${user.full_name || 'Аноним'}</td>
+          <td class="user-points">${points}</td>
           <td class="user-status">
             <span class="status-badge ${statusInfo.class}">${statusInfo.text}</span>
           </td>
         `;
-        
-        // Подсвечиваем текущего пользователя
-        if (user.id === userId) {
-          row.style.backgroundColor = 'rgba(212, 160, 23, 0.1)';
-          row.style.borderLeft = '3px solid var(--gold)';
-        }
         
         tbody.appendChild(row);
       });
 
       // Показываем таблицу, скрываем loading
       document.getElementById('loading').style.display = 'none';
-      document.getElementById('ratings-table').style.display = 'table';
+      document.getElementById('table-container').style.display = 'block';
 
     } catch (err) {
       console.error('Unexpected error:', err);
-      document.getElementById('loading').textContent = 'Неожиданная ошибка при загрузке рейтинга';
+      document.getElementById('loading').innerHTML = `
+        <div style="color: #ff6b6b;">Неожиданная ошибка при загрузке</div>
+        <div style="font-size: 0.9rem; color: #aaa; margin-top: 10px;">Пожалуйста, обновите страницу</div>
+      `;
     }
   }
 
