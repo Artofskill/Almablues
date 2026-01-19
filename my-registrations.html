@@ -147,14 +147,6 @@
       background: var(--chelsea-blue-dark);
     }
 
-    .btn-red {
-      background: #f44336;
-    }
-
-    .btn-red:hover {
-      background: #d32f2f;
-    }
-
     .btn-disabled {
       background: #666;
       color: #999;
@@ -235,6 +227,23 @@
     location.href = 'index.html';
   }
 
+  // === Часовой пояс UTC+5 для Казахстана ===
+  function getCurrentTimeUTC5() {
+    return new Date(); // Возвращаем текущее время устройства
+  }
+
+  function formatDateTimeUTC5(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString('ru-RU', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Almaty'
+    }) + ' (UTC+5)';
+  }
+
   // Загружаем записи пользователя
   async function loadMyRegistrations() {
     try {
@@ -284,15 +293,18 @@
       const upcoming = [];
       const past = [];
       const cancelled = [];
+      const checkedIn = [];
       
       data.forEach(reg => {
         if (!reg.events) return;
         
         const eventDate = new Date(reg.events.match_date);
-        const now = new Date();
+        const now = getCurrentTimeUTC5();
         
         if (reg.status === 'cancelled') {
           cancelled.push({ reg, eventDate });
+        } else if (reg.status === 'checked_in') {
+          checkedIn.push({ reg, eventDate });
         } else if (eventDate < now) {
           past.push({ reg, eventDate });
         } else {
@@ -304,6 +316,7 @@
       upcoming.sort((a, b) => a.eventDate - b.eventDate);
       past.sort((a, b) => b.eventDate - a.eventDate);
       cancelled.sort((a, b) => b.eventDate - a.eventDate);
+      checkedIn.sort((a, b) => b.eventDate - a.eventDate);
       
       let html = '';
       
@@ -315,9 +328,17 @@
         });
       }
       
-      // Прошедшие мероприятия
+      // Посещенные мероприятия
+      if (checkedIn.length > 0) {
+        html += '<h3 style="margin: 20px 0 10px; color: #4CAF50;">Посещенные</h3>';
+        checkedIn.forEach(({ reg, eventDate }) => {
+          html += createRegistrationCard(reg, eventDate, true);
+        });
+      }
+      
+      // Прошедшие мероприятия (не посещенные)
       if (past.length > 0) {
-        html += '<h3 style="margin: 20px 0 10px; color: #aaa;">Прошедшие</h3>';
+        html += '<h3 style="margin: 20px 0 10px; color: #aaa;">Прошедшие (не посещенные)</h3>';
         past.forEach(({ reg, eventDate }) => {
           html += createRegistrationCard(reg, eventDate, true);
         });
@@ -341,13 +362,7 @@
 
   function createRegistrationCard(reg, eventDate, isPast = false) {
     const event = reg.events;
-    const formattedDate = eventDate.toLocaleDateString('ru-RU', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    const formattedDate = formatDateTimeUTC5(event.match_date);
     
     const statusText = reg.status === 'registered' ? 'Записан' : 
                       reg.status === 'cancelled' ? 'Отменено' : 
@@ -364,9 +379,6 @@
     let buttons = '';
     if (reg.status === 'registered' && !isPast) {
       buttons = `
-        <button class="btn btn-red" onclick="cancelRegistration('${reg.id}', '${event.match_name}')">
-          Отменить запись
-        </button>
         <a href="event-participants.html?event_id=${event.id}" class="btn">
           Участники
         </a>
@@ -374,7 +386,17 @@
     } else if (reg.status === 'checked_in') {
       buttons = `
         <span class="btn btn-disabled">✓ Посещено</span>
-        ${reg.checkin_time ? `<small style="color: #4CAF50;">Отмечен: ${new Date(reg.checkin_time).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}</small>` : ''}
+        ${reg.checkin_time ? `<small style="color: #4CAF50; display: block; margin-top: 5px;">Отмечен: ${new Date(reg.checkin_time).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}</small>` : ''}
+      `;
+    } else if (reg.status === 'cancelled') {
+      buttons = `
+        <span class="btn btn-disabled">Отменено</span>
+      `;
+    } else {
+      buttons = `
+        <a href="event-participants.html?event_id=${event.id}" class="btn">
+          Участники
+        </a>
       `;
     }
     
@@ -392,31 +414,6 @@
         </div>
       </div>
     `;
-  }
-
-  async function cancelRegistration(registrationId, eventName) {
-    if (!confirm(`Вы уверены, что хотите отменить запись на "${eventName}"?`)) {
-      return;
-    }
-    
-    try {
-      const { error } = await supabaseClient
-        .from('registrations')
-        .update({ 
-          status: 'cancelled',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', registrationId);
-      
-      if (error) throw error;
-      
-      alert('✅ Запись отменена');
-      loadMyRegistrations(); // Перезагружаем список
-      
-    } catch (error) {
-      console.error('Error cancelling registration:', error);
-      alert('❌ Ошибка при отмене записи');
-    }
   }
 
   // Инициализация
