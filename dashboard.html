@@ -1271,38 +1271,32 @@
     }
   }
 
-function processScannedCode(decodedText) {
-  const scannerResult = document.getElementById('scanner-result');
-  scannerResult.innerHTML = '<p>⏳ Обработка QR кода...</p>';
-  
-  try {
-    const eventData = JSON.parse(decodedText);
-    processCheckin(eventData, 'scanner');
-  } catch (error) {
-    scannerResult.innerHTML = 
-      '<div class="scan-status error">❌ Неверный формат QR кода</div>';
+  function processScannedCode(decodedText) {
+    const scannerResult = document.getElementById('scanner-result');
+    scannerResult.innerHTML = '<p>⏳ Обработка QR кода...</p>';
+    
+    try {
+      const eventData = JSON.parse(decodedText);
+      processCheckin(eventData, 'scanner');
+    } catch (error) {
+      scannerResult.innerHTML = 
+        '<div class="scan-status error">❌ Неверный формат QR кода</div>' +
+        '<button class="btn" onclick="restartScanner()" style="margin-top: 10px;">Сканировать еще раз</button>';
+      isScanning = false;
+      lastScannedCode = '';
+    }
+  }
+
+  function restartScanner() {
+    const scannerResult = document.getElementById('scanner-result');
+    scannerResult.innerHTML = '';
     isScanning = false;
     lastScannedCode = '';
     
-    // УБИРАЕМ АВТОМАТИЧЕСКИЙ ПЕРЕЗАПУСК - теперь сканер не перезапускается сам
-    // setTimeout(() => {
-    //   if (document.getElementById('qr-scanner-modal').style.display === 'flex') {
-    //     initQRScanner();
-    //   }
-    // }, 2000);
+    if (document.getElementById('qr-scanner-modal').style.display === 'flex') {
+      initQRScanner();
+    }
   }
-}
-
-function restartScanner() {
-  const scannerResult = document.getElementById('scanner-result');
-  scannerResult.innerHTML = '';
-  isScanning = false;
-  lastScannedCode = '';
-  
-  if (document.getElementById('qr-scanner-modal').style.display === 'flex') {
-    initQRScanner();
-  }
-}
 
   function processManualCode() {
     const manualCode = document.getElementById('manual-event-code').value.trim();
@@ -1324,15 +1318,17 @@ function restartScanner() {
   async function processCheckin(eventData, source = 'manual') {
     if (!eventData.e) {
       const message = '❌ В QR коде нет идентификатора мероприятия';
-
-if (source === 'scanner') {
-  document.getElementById('scanner-result').innerHTML = 
-    `<div class="scan-status error">${message}</div>
-     <button class="btn" onclick="restartScanner()" style="margin-top: 10px;">Сканировать еще раз</button>`;
-  isScanning = false;
-  lastScannedCode = '';
-  
-}
+      if (source === 'scanner') {
+        document.getElementById('scanner-result').innerHTML = 
+          '<div class="scan-status error">' + message + '</div>' +
+          '<button class="btn" onclick="restartScanner()" style="margin-top: 10px;">Сканировать еще раз</button>';
+        isScanning = false;
+        lastScannedCode = '';
+      } else {
+        showNotification(message, 'error');
+      }
+      return;
+    }
     
     const eventId = eventData.e;
     
@@ -1353,15 +1349,10 @@ if (source === 'scanner') {
         const message = '❌ Мероприятие не найдено';
         if (source === 'scanner') {
           document.getElementById('scanner-result').innerHTML = 
-            `<div class="scan-status error">${message}</div>`;
+            '<div class="scan-status error">' + message + '</div>' +
+            '<button class="btn" onclick="restartScanner()" style="margin-top: 10px;">Сканировать еще раз</button>';
           isScanning = false;
           lastScannedCode = '';
-          
-          setTimeout(() => {
-            if (document.getElementById('qr-scanner-modal').style.display === 'flex') {
-              initQRScanner();
-            }
-          }, 2000);
         } else {
           showNotification(message, 'error');
         }
@@ -1371,18 +1362,13 @@ if (source === 'scanner') {
       // Проверяем время чекина
       const checkinAvailable = isCheckinAvailable(event.match_date);
       if (!checkinAvailable) {
-        const message = `❌ ${getCheckinWindowText(event.match_date)}`;
+        const message = '❌ ' + getCheckinWindowText(event.match_date);
         if (source === 'scanner') {
           document.getElementById('scanner-result').innerHTML = 
-            `<div class="scan-status error">${message}</div>`;
+            '<div class="scan-status error">' + message + '</div>' +
+            '<button class="btn" onclick="restartScanner()" style="margin-top: 10px;">Сканировать еще раз</button>';
           isScanning = false;
           lastScannedCode = '';
-          
-          setTimeout(() => {
-            if (document.getElementById('qr-scanner-modal').style.display === 'flex') {
-              initQRScanner();
-            }
-          }, 2000);
         } else {
           showNotification(message, 'error');
         }
@@ -1398,18 +1384,13 @@ if (source === 'scanner') {
         .maybeSingle();
       
       if (!registration) {
-        const message = `❌ Вы не записаны на мероприятие "${event.match_name}"`;
+        const message = '❌ Вы не записаны на мероприятие "' + event.match_name + '"';
         if (source === 'scanner') {
           document.getElementById('scanner-result').innerHTML = 
-            `<div class="scan-status error">${message}</div>`;
+            '<div class="scan-status error">' + message + '</div>' +
+            '<button class="btn" onclick="restartScanner()" style="margin-top: 10px;">Сканировать еще раз</button>';
           isScanning = false;
           lastScannedCode = '';
-          
-          setTimeout(() => {
-            if (document.getElementById('qr-scanner-modal').style.display === 'flex') {
-              initQRScanner();
-            }
-          }, 2000);
         } else {
           showNotification(message, 'error');
         }
@@ -1417,18 +1398,13 @@ if (source === 'scanner') {
       }
       
       if (registration.status === 'checked_in') {
-        const message = `⚠️ Вы уже отметились на мероприятии "${event.match_name}"`;
+        const message = '⚠️ Вы уже отметились на мероприятии "' + event.match_name + '"';
         if (source === 'scanner') {
           document.getElementById('scanner-result').innerHTML = 
-            `<div class="scan-status info">${message}</div>`;
+            '<div class="scan-status info">' + message + '</div>' +
+            '<button class="btn" onclick="restartScanner()" style="margin-top: 10px;">Сканировать еще раз</button>';
           isScanning = false;
           lastScannedCode = '';
-          
-          setTimeout(() => {
-            if (document.getElementById('qr-scanner-modal').style.display === 'flex') {
-              initQRScanner();
-            }
-          }, 2000);
         } else {
           showNotification(message, 'info');
         }
@@ -1436,18 +1412,13 @@ if (source === 'scanner') {
       }
       
       if (registration.status === 'cancelled') {
-        const message = `❌ Ваша запись на мероприятие "${event.match_name}" отменена`;
+        const message = '❌ Ваша запись на мероприятие "' + event.match_name + '" отменена';
         if (source === 'scanner') {
           document.getElementById('scanner-result').innerHTML = 
-            `<div class="scan-status error">${message}</div>`;
+            '<div class="scan-status error">' + message + '</div>' +
+            '<button class="btn" onclick="restartScanner()" style="margin-top: 10px;">Сканировать еще раз</button>';
           isScanning = false;
           lastScannedCode = '';
-          
-          setTimeout(() => {
-            if (document.getElementById('qr-scanner-modal').style.display === 'flex') {
-              initQRScanner();
-            }
-          }, 2000);
         } else {
           showNotification(message, 'error');
         }
@@ -1493,30 +1464,25 @@ if (source === 'scanner') {
       if (pointsError) throw pointsError;
       
       // Показываем успешное сообщение
-if (source === 'scanner') {
-  document.getElementById('scanner-result').innerHTML = 
-    `<div class="scan-status success">
-      <div style="font-size: 1.2rem; margin-bottom: 10px;">✅ Успешно!</div>
-      <div>Вы отметились на мероприятии</div>
-      <div style="font-weight: bold; margin: 5px 0;">${event.match_name}</div>
-      <div style="color: #D4A017; margin-top: 10px;">🏆 +${pointsAward} баллов</div>
-      <div style="color: #aaa; font-size: 0.9rem; margin-top: 5px;">Всего баллов: ${newPoints}</div>
-      <button class="btn" onclick="closeQRScannerModal()" style="margin-top: 10px;">Закрыть</button>
-    </div>`;
+      if (source === 'scanner') {
+        document.getElementById('scanner-result').innerHTML = 
+          '<div class="scan-status success">' +
+            '<div style="font-size: 1.2rem; margin-bottom: 10px;">✅ Успешно!</div>' +
+            '<div>Вы отметились на мероприятии</div>' +
+            '<div style="font-weight: bold; margin: 5px 0;">' + event.match_name + '</div>' +
+            '<div style="color: #D4A017; margin-top: 10px;">🏆 +' + pointsAward + ' баллов</div>' +
+            '<div style="color: #aaa; font-size: 0.9rem; margin-top: 5px;">Всего баллов: ' + newPoints + '</div>' +
+            '<button class="btn" onclick="closeQRScannerModal()" style="margin-top: 10px;">Закрыть</button>' +
+          '</div>';
         
         // Показываем глобальное уведомление
-        showCheckinNotification(`Вы отметились на "${event.match_name}"!`, pointsAward);
+        showCheckinNotification('Вы отметились на "' + event.match_name + '"!', pointsAward);
         
         // НЕМЕДЛЕННО обновляем данные пользователя и мероприятия
         await loadUserData();
         await loadEvents();
-        
-        // Закрываем модальное окно через 3 секунды
-        setTimeout(() => {
-          closeQRScannerModal();
-        }, 3000);
       } else {
-        showNotification(`✅ Вы отметились на мероприятии "${event.match_name}"! +${pointsAward} баллов`, 'success');
+        showNotification('✅ Вы отметились на мероприятии "' + event.match_name + '"! +' + pointsAward + ' баллов', 'success');
         await loadUserData();
         await loadEvents();
       }
@@ -1526,15 +1492,10 @@ if (source === 'scanner') {
       const message = '❌ Ошибка при обработке чекина';
       if (source === 'scanner') {
         document.getElementById('scanner-result').innerHTML = 
-          `<div class="scan-status error">${message}</div>`;
+          '<div class="scan-status error">' + message + '</div>' +
+          '<button class="btn" onclick="restartScanner()" style="margin-top: 10px;">Сканировать еще раз</button>';
         isScanning = false;
         lastScannedCode = '';
-        
-        setTimeout(() => {
-          if (document.getElementById('qr-scanner-modal').style.display === 'flex') {
-            initQRScanner();
-          }
-        }, 2000);
       } else {
         showNotification(message, 'error');
       }
