@@ -208,6 +208,30 @@
       display: block;
     }
 
+    .status-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+
+    .status-registered {
+      background: rgba(33, 150, 243, 0.2);
+      color: #2196F3;
+    }
+
+    .status-checked_in {
+      background: rgba(76, 175, 80, 0.2);
+      color: #4CAF50;
+    }
+
+    .status-cancelled {
+      background: rgba(244, 67, 54, 0.2);
+      color: #F44336;
+    }
+
     footer {
       text-align: center;
       margin-top: 3rem;
@@ -326,24 +350,26 @@
       for (const event of events) {
         const eventDate = new Date(event.match_date);
         
-        // Получаем количество записанных участников
-        const { count: registeredCount } = await supabaseClient
+        // Получаем количество записанных участников (registered + checked_in)
+        const { count: activeParticipants } = await supabaseClient
           .from('registrations')
           .select('*', { count: 'exact', head: true })
           .eq('event_id', event.id)
-          .eq('status', 'registered');
+          .in('status', ['registered', 'checked_in']);
         
-        event.registeredCount = registeredCount || 0;
+        event.activeParticipants = activeParticipants || 0;
         
-        // Проверяем, записан ли текущий пользователь
+        // Проверяем, записан ли текущий пользователь и какой у него статус
         const { data: userRegistration } = await supabaseClient
           .from('registrations')
           .select('status')
           .eq('user_id', userId)
           .eq('event_id', event.id)
+          .in('status', ['registered', 'checked_in'])
           .maybeSingle();
         
-        event.isRegistered = userRegistration && userRegistration.status === 'registered';
+        // Пользователь уже записан если статус registered или checked_in
+        event.isRegistered = !!userRegistration;
         event.userStatus = userRegistration ? userRegistration.status : null;
         
         if (eventDate >= now) {
@@ -396,7 +422,7 @@
         minute: '2-digit'
       });
       
-      const isFull = event.max_participants && event.registeredCount >= event.max_participants;
+      const isFull = event.max_participants && event.activeParticipants >= event.max_participants;
       const isClosed = !event.is_open || isPast;
       const itemClass = isClosed ? 'event-item closed' : 
                        isFull ? 'event-item full' : 'event-item';
@@ -404,9 +430,21 @@
       let buttonHtml = '';
       
       if (!isPast) {
+        // Проверяем, записан ли пользователь (статус registered или checked_in)
         if (event.isRegistered) {
+          // Определяем текст статуса
+          let statusText = 'Записан';
+          let statusClass = 'status-registered';
+          
+          if (event.userStatus === 'checked_in') {
+            statusText = 'Отметилcя';
+            statusClass = 'status-checked_in';
+          }
+          
           buttonHtml = `
-            <button class="btn btn-disabled" disabled>✓ Записан</button>
+            <button class="btn btn-disabled" disabled>
+              ✓ ${statusText} <span class="status-badge ${statusClass}">${statusText}</span>
+            </button>
             <a href="event-participants.html?event_id=${event.id}" class="btn btn-gold">Участники</a>
           `;
         } else if (isClosed) {
@@ -436,7 +474,7 @@
             ${event.description ? `<br>📝 ${event.description}` : ''}
           </div>
           <div class="event-meta">
-            <span>👥 ${event.registeredCount}${event.max_participants ? `/${event.max_participants}` : ''} участников</span>
+            <span>👥 ${event.activeParticipants}${event.max_participants ? `/${event.max_participants}` : ''} участников</span>
             <span>${event.is_open ? '✅ Открыта запись' : '❌ Закрыта запись'}</span>
           </div>
           <div>
@@ -455,23 +493,41 @@
     }
     
     try {
-      // Проверяем, существует ли уже запись
+      // Проверяем, существует ли уже активная запись (registered или checked_in)
       const { data: existing } = await supabaseClient
         .from('registrations')
         .select('id, status')
         .eq('user_id', userId)
         .eq('event_id', eventId)
+        .in('status', ['registered', 'checked_in'])
         .maybeSingle();
       
       if (existing) {
-        // Обновляем существующую запись
+        // Если уже есть активная запись, не позволяем записаться снова
+        alert('ℹ️ Вы уже записаны на это мероприятие!');
+        // Перезагружаем мероприятия чтобы обновить статус
+        loadAllEvents();
+        return;
+      }
+      
+      // Проверяем, есть ли отмененная запись
+      const { data: cancelledRegistration } = await supabaseClient
+        .from('registrations')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('event_id', eventId)
+        .eq('status', 'cancelled')
+        .maybeSingle();
+      
+      if (cancelledRegistration) {
+        // Обновляем существующую отмененную запись
         const { error } = await supabaseClient
           .from('registrations')
           .update({ 
             status: 'registered',
             updated_at: new Date().toISOString()
           })
-          .eq('id', existing.id);
+          .eq('id', cancelledRegistration.id);
         
         if (error) throw error;
         alert('✅ Вы снова записаны на мероприятие!');
