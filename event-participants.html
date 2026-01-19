@@ -86,6 +86,35 @@
       font-size: 0.9rem;
     }
 
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: var(--text-light);
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.9rem;
+      transition: all 0.3s;
+    }
+
+    .filter-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .filter-btn.active {
+      background: var(--chelsea-blue);
+      color: var(--white);
+      font-weight: 500;
+    }
+
     .participants-list {
       margin-top: 20px;
     }
@@ -173,7 +202,7 @@
 
     .stats {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 10px;
       margin-bottom: 20px;
     }
@@ -222,14 +251,24 @@
   <div class="stats" id="stats-section" style="display: none;">
     <div class="stat-card">
       <div class="stat-number" id="total-participants">0</div>
-      <div class="stat-label">Всего записей</div>
+      <div class="stat-label">Всего участников</div>
     </div>
     <div class="stat-card">
       <div class="stat-number" id="checked-in-participants">0</div>
       <div class="stat-label">Отметились</div>
     </div>
+    <div class="stat-card">
+      <div class="stat-number" id="registered-participants">0</div>
+      <div class="stat-label">Ждут чекина</div>
+    </div>
   </div>
 
+  <div class="filters" id="filters-section" style="display: none;">
+    <button class="filter-btn active" data-filter="all">Все участники</button>
+    <button class="filter-btn" data-filter="checked_in">Только отметившиеся</button>
+    <button class="filter-btn" data-filter="registered">Только записанные</button>
+  </div>
+  
   <div id="loading" class="loading">Загрузка участников...</div>
   
   <div id="participants-list" class="participants-list" style="display: none;">
@@ -272,6 +311,9 @@
     throw new Error('No event_id in URL');
   }
 
+  let allParticipants = [];
+  let currentFilter = 'all';
+
   // Загружаем информацию о мероприятии и участниках
   async function loadEventParticipants() {
     try {
@@ -310,7 +352,7 @@
       
       document.getElementById('event-details').style.display = 'block';
 
-      // Загружаем участников мероприятия
+      // Загружаем участников мероприятия (всех, кроме отмененных)
       const { data: participants, error: participantsError } = await supabaseClient
         .from('registrations')
         .select(`
@@ -325,25 +367,30 @@
           )
         `)
         .eq('event_id', eventId)
-        .eq('status', 'registered'); // Показываем только записанных, не отмененных
+        .neq('status', 'cancelled');
 
       if (participantsError) {
         document.getElementById('loading').innerHTML = '<p style="color: #ff6666;">Ошибка загрузки участников</p>';
         return;
       }
 
+      allParticipants = participants || [];
+      
       // Статистика
-      const total = participants ? participants.length : 0;
-      const checkedIn = participants ? participants.filter(p => p.status === 'checked_in').length : 0;
+      const total = allParticipants.length;
+      const checkedIn = allParticipants.filter(p => p.status === 'checked_in').length;
+      const registered = allParticipants.filter(p => p.status === 'registered').length;
       
       document.getElementById('total-participants').textContent = total;
       document.getElementById('checked-in-participants').textContent = checkedIn;
+      document.getElementById('registered-participants').textContent = registered;
       document.getElementById('stats-section').style.display = 'grid';
+      document.getElementById('filters-section').style.display = 'flex';
 
       const loadingEl = document.getElementById('loading');
       const listEl = document.getElementById('participants-list');
       
-      if (!participants || participants.length === 0) {
+      if (allParticipants.length === 0) {
         loadingEl.innerHTML = `
           <div class="empty-state">
             <div class="empty-state-icon">👤</div>
@@ -358,52 +405,94 @@
       loadingEl.style.display = 'none';
       listEl.style.display = 'block';
       
-      // Сортируем участников: сначала отметившиеся, затем по алфавиту
-      participants.sort((a, b) => {
-        if (a.status === 'checked_in' && b.status !== 'checked_in') return -1;
-        if (a.status !== 'checked_in' && b.status === 'checked_in') return 1;
-        return (a.users?.full_name || '').localeCompare(b.users?.full_name || '');
+      // Обработчики для фильтров
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentFilter = btn.dataset.filter;
+          renderParticipants();
+        });
       });
 
-      let html = '';
-      
-      participants.forEach(participant => {
-        const user = participant.users;
-        if (!user) return;
-        
-        const firstLetter = user.full_name ? user.full_name.charAt(0).toUpperCase() : '?';
-        const isCheckedIn = participant.status === 'checked_in';
-        const itemClass = isCheckedIn ? 'participant-item checked_in' : 'participant-item';
-        
-        const statusText = isCheckedIn ? 'Отметилcя' : 'Записан';
-        const statusClass = isCheckedIn ? 'status-checked_in' : 'status-registered';
-        
-        const checkinTime = participant.checkin_time ? 
-          new Date(participant.checkin_time).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'}) : '';
-        
-        html += `
-          <div class="${itemClass}">
-            <div class="participant-avatar">${firstLetter}</div>
-            <div class="participant-info">
-              <div class="participant-name">
-                ${user.full_name || 'Аноним'}
-                <span class="status-badge ${statusClass}">${statusText}</span>
-              </div>
-              <div class="participant-status">
-                @${user.username || 'нет username'}
-                ${checkinTime ? ` • 🕒 ${checkinTime}` : ''}
-              </div>
-            </div>
-          </div>
-        `;
-      });
-      
-      listEl.innerHTML = html;
+      renderParticipants();
       
     } catch (err) {
       console.error('Error loading participants:', err);
       document.getElementById('loading').innerHTML = '<p style="color: #ff6666;">Неожиданная ошибка при загрузке</p>';
     }
+  }
+
+  // Функция рендеринга участников с учетом фильтра
+  function renderParticipants() {
+    const listEl = document.getElementById('participants-list');
+    
+    // Фильтрация участников
+    let filteredParticipants;
+    switch(currentFilter) {
+      case 'checked_in':
+        filteredParticipants = allParticipants.filter(p => p.status === 'checked_in');
+        break;
+      case 'registered':
+        filteredParticipants = allParticipants.filter(p => p.status === 'registered');
+        break;
+      case 'all':
+      default:
+        filteredParticipants = allParticipants;
+    }
+
+    if (filteredParticipants.length === 0) {
+      listEl.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🔍</div>
+          <h3>Нет участников</h3>
+          <p>По выбранному фильтру участников не найдено</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Сортируем участников: сначала отметившиеся, затем по алфавиту
+    filteredParticipants.sort((a, b) => {
+      if (a.status === 'checked_in' && b.status !== 'checked_in') return -1;
+      if (a.status !== 'checked_in' && b.status === 'checked_in') return 1;
+      return (a.users?.full_name || '').localeCompare(b.users?.full_name || '');
+    });
+
+    let html = '';
+    
+    filteredParticipants.forEach(participant => {
+      const user = participant.users;
+      if (!user) return;
+      
+      const firstLetter = user.full_name ? user.full_name.charAt(0).toUpperCase() : '?';
+      const isCheckedIn = participant.status === 'checked_in';
+      const itemClass = isCheckedIn ? 'participant-item checked_in' : 'participant-item';
+      
+      const statusText = isCheckedIn ? 'Отметилcя' : 'Записан';
+      const statusClass = isCheckedIn ? 'status-checked_in' : 'status-registered';
+      
+      const checkinTime = participant.checkin_time ? 
+        new Date(participant.checkin_time).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'}) : '';
+      
+      html += `
+        <div class="${itemClass}">
+          <div class="participant-avatar">${firstLetter}</div>
+          <div class="participant-info">
+            <div class="participant-name">
+              ${user.full_name || 'Аноним'}
+              <span class="status-badge ${statusClass}">${statusText}</span>
+            </div>
+            <div class="participant-status">
+              @${user.username || 'нет username'}
+              ${checkinTime ? ` • 🕒 ${checkinTime}` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    listEl.innerHTML = html;
   }
 
   // Инициализация
