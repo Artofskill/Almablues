@@ -613,26 +613,25 @@
   // === Часовой пояс UTC+5 для Казахстана ===
   const TIMEZONE_OFFSET = 5 * 60 * 60 * 1000;
   
-  function getCurrentTimeUTC5() {
-    const now = new Date();
-    return new Date(now.getTime() + TIMEZONE_OFFSET);
-  }
-  
-  function convertToUTC5(dateString) {
-    const date = new Date(dateString);
-    return new Date(date.getTime() + TIMEZONE_OFFSET);
-  }
-  
-  function formatDateTimeUTC5(dateString) {
-    const date = convertToUTC5(dateString);
-    return date.toLocaleString('ru-RU', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
+function getCurrentTimeUTC5() {
+  return new Date(); // Возвращаем текущее время устройства
+}
+
+function convertToUTC5(dateString) {
+  return new Date(dateString); // Просто конвертируем строку в Date
+}
+
+function formatDateTimeUTC5(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleString('ru-RU', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Almaty' // Указываем часовой пояс Казахстана
+  });
+}
   
   // Проверка доступности чекина (в любое время до и в течение 2 часов после)
   function isCheckinAvailable(eventTime) {
