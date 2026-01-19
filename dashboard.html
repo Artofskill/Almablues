@@ -1271,27 +1271,38 @@
     }
   }
 
-  function processScannedCode(decodedText) {
-    const scannerResult = document.getElementById('scanner-result');
-    scannerResult.innerHTML = '<p>⏳ Обработка QR кода...</p>';
+function processScannedCode(decodedText) {
+  const scannerResult = document.getElementById('scanner-result');
+  scannerResult.innerHTML = '<p>⏳ Обработка QR кода...</p>';
+  
+  try {
+    const eventData = JSON.parse(decodedText);
+    processCheckin(eventData, 'scanner');
+  } catch (error) {
+    scannerResult.innerHTML = 
+      '<div class="scan-status error">❌ Неверный формат QR кода</div>';
+    isScanning = false;
+    lastScannedCode = '';
     
-    try {
-      const eventData = JSON.parse(decodedText);
-      processCheckin(eventData, 'scanner');
-    } catch (error) {
-      scannerResult.innerHTML = 
-        '<div class="scan-status error">❌ Неверный формат QR кода</div>';
-      isScanning = false;
-      lastScannedCode = '';
-      
-      // Перезапускаем сканер через 2 секунды
-      setTimeout(() => {
-        if (document.getElementById('qr-scanner-modal').style.display === 'flex') {
-          initQRScanner();
-        }
-      }, 2000);
-    }
+    // УБИРАЕМ АВТОМАТИЧЕСКИЙ ПЕРЕЗАПУСК - теперь сканер не перезапускается сам
+    // setTimeout(() => {
+    //   if (document.getElementById('qr-scanner-modal').style.display === 'flex') {
+    //     initQRScanner();
+    //   }
+    // }, 2000);
   }
+}
+
+function restartScanner() {
+  const scannerResult = document.getElementById('scanner-result');
+  scannerResult.innerHTML = '';
+  isScanning = false;
+  lastScannedCode = '';
+  
+  if (document.getElementById('qr-scanner-modal').style.display === 'flex') {
+    initQRScanner();
+  }
+}
 
   function processManualCode() {
     const manualCode = document.getElementById('manual-event-code').value.trim();
@@ -1313,23 +1324,15 @@
   async function processCheckin(eventData, source = 'manual') {
     if (!eventData.e) {
       const message = '❌ В QR коде нет идентификатора мероприятия';
-      if (source === 'scanner') {
-        document.getElementById('scanner-result').innerHTML = 
-          `<div class="scan-status error">${message}</div>`;
-        isScanning = false;
-        lastScannedCode = '';
-        
-        // Перезапускаем сканер через 2 секунды
-        setTimeout(() => {
-          if (document.getElementById('qr-scanner-modal').style.display === 'flex') {
-            initQRScanner();
-          }
-        }, 2000);
-      } else {
-        showNotification(message, 'error');
-      }
-      return;
-    }
+
+if (source === 'scanner') {
+  document.getElementById('scanner-result').innerHTML = 
+    `<div class="scan-status error">${message}</div>
+     <button class="btn" onclick="restartScanner()" style="margin-top: 10px;">Сканировать еще раз</button>`;
+  isScanning = false;
+  lastScannedCode = '';
+  
+}
     
     const eventId = eventData.e;
     
@@ -1490,15 +1493,16 @@
       if (pointsError) throw pointsError;
       
       // Показываем успешное сообщение
-      if (source === 'scanner') {
-        document.getElementById('scanner-result').innerHTML = 
-          `<div class="scan-status success">
-            <div style="font-size: 1.2rem; margin-bottom: 10px;">✅ Успешно!</div>
-            <div>Вы отметились на мероприятии</div>
-            <div style="font-weight: bold; margin: 5px 0;">${event.match_name}</div>
-            <div style="color: #D4A017; margin-top: 10px;">🏆 +${pointsAward} баллов</div>
-            <div style="color: #aaa; font-size: 0.9rem; margin-top: 5px;">Всего баллов: ${newPoints}</div>
-          </div>`;
+if (source === 'scanner') {
+  document.getElementById('scanner-result').innerHTML = 
+    `<div class="scan-status success">
+      <div style="font-size: 1.2rem; margin-bottom: 10px;">✅ Успешно!</div>
+      <div>Вы отметились на мероприятии</div>
+      <div style="font-weight: bold; margin: 5px 0;">${event.match_name}</div>
+      <div style="color: #D4A017; margin-top: 10px;">🏆 +${pointsAward} баллов</div>
+      <div style="color: #aaa; font-size: 0.9rem; margin-top: 5px;">Всего баллов: ${newPoints}</div>
+      <button class="btn" onclick="closeQRScannerModal()" style="margin-top: 10px;">Закрыть</button>
+    </div>`;
         
         // Показываем глобальное уведомление
         showCheckinNotification(`Вы отметились на "${event.match_name}"!`, pointsAward);
