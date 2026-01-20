@@ -265,6 +265,28 @@
       }
     }
   </style>
+
+  <style>
+    .blacklisted-message {
+        color: #ff4444;
+        font-size: 1.8rem;
+        font-weight: bold;
+        text-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+        animation: blink 1.5s infinite;
+        margin-bottom: 2rem;
+        text-align: center;
+        padding: 1rem;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 10px;
+        border: 1px solid #ff4444;
+    }
+
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+</style>
+
 </head>
 
 <body>
@@ -313,72 +335,130 @@
 
   let welcomeHomeShownTime = 0;
 
-  async function init() {
+// Обновите функцию init() в <script>
+async function init() {
     if (!tg.initDataUnsafe?.user) {
-      status.textContent = 'Откройте приложение через Telegram';
-      return;
+        status.textContent = 'Откройте приложение через Telegram';
+        return;
     }
 
     const user = tg.initDataUnsafe.user;
     const tgUsername = user.username || null;
 
+    // Проверка на черный список
+    status.textContent = 'Проверка доступа...';
+    
+    const { data: blacklistData, error: blacklistError } = await supabaseClient
+        .from('blacklisted_users')
+        .select('*')
+        .eq('telegram_id', user.id)
+        .maybeSingle();
+
+    if (blacklistError) {
+        console.error('Ошибка проверки черного списка:', blacklistError);
+    }
+
+    // Если пользователь в черном списке
+    if (blacklistData) {
+        status.textContent = 'Доступ ограничен';
+        status.style.color = '#ff4444';
+        status.style.fontSize = '1.8rem';
+        status.style.fontWeight = 'bold';
+        
+        // Создаем сообщение о блокировке
+        const blacklistedDiv = document.createElement('div');
+        blacklistedDiv.className = 'blacklisted-message';
+        blacklistedDiv.innerHTML = `
+            <div>🚫 Доступ ограничен</div>
+            <div style="font-size: 1rem; margin-top: 10px; color: #ccc;">
+                Ваш аккаунт был заблокирован
+                ${blacklistData.reason ? `<br>Причина: ${blacklistData.reason}` : ''}
+            </div>
+        `;
+        
+        // Заменяем форму сообщением о блокировке
+        regForm.style.display = 'none';
+        document.querySelector('main > div').insertBefore(blacklistedDiv, regForm);
+        
+        // Очищаем локальное хранилище на всякий случай
+        localStorage.clear();
+        
+        // Завершаем выполнение функции
+        return;
+    }
+
+    // Если не в черном списке, продолжаем обычную проверку
     status.textContent = `Привет, ${user.first_name}! Проверяем аккаунт...`;
 
     const { data, error } = await supabaseClient
-      .from('users')
-      .select('*')
-      .eq('telegram_id', user.id)
-      .maybeSingle();
+        .from('users')
+        .select('*')
+        .eq('telegram_id', user.id)
+        .maybeSingle();
 
     if (error) {
-      console.error(error);
-      status.textContent = 'Ошибка подключения к базе';
-      return;
+        console.error(error);
+        status.textContent = 'Ошибка подключения к базе';
+        return;
     }
 
     if (data) {
-      if (data.full_name && data.full_name.trim() !== '') {
-        const welcomeTime = Date.now();
-        welcomeHomeShownTime = welcomeTime;
+        if (data.full_name && data.full_name.trim() !== '') {
+            const welcomeTime = Date.now();
+            welcomeHomeShownTime = welcomeTime;
 
-        status.textContent = 'Welcome home';
-        status.classList.add('welcome-home');
+            status.textContent = 'Welcome home';
+            status.classList.add('welcome-home');
 
-        setTimeout(() => {
-          if (welcomeHomeShownTime === welcomeTime) {
+            setTimeout(() => {
+                if (welcomeHomeShownTime === welcomeTime) {
+                    localStorage.setItem('userId', data.id);
+                    localStorage.setItem('userFullName', data.full_name);
+                    location.href = 'dashboard.html';
+                }
+            }, 4000);
+        } else {
+            status.textContent = 'Пожалуйста, заполните профиль';
+            document.getElementById('full_name').value =
+                [user.first_name, user.last_name].filter(Boolean).join(' ');
+
+            if (!tgUsername) {
+                usernameInput.style.display = 'block';
+            }
+
+            regForm.style.display = 'flex';
             localStorage.setItem('userId', data.id);
-            localStorage.setItem('userFullName', data.full_name);
-            location.href = 'dashboard.html';
-          }
-        }, 4000);
-      } else {
-        status.textContent = 'Пожалуйста, заполните профиль';
+        }
+    } else {
+        status.textContent = 'Первый вход — заполните профиль';
         document.getElementById('full_name').value =
-          [user.first_name, user.last_name].filter(Boolean).join(' ');
+            [user.first_name, user.last_name].filter(Boolean).join(' ');
 
         if (!tgUsername) {
-          usernameInput.style.display = 'block';
+            usernameInput.style.display = 'block';
         }
 
         regForm.style.display = 'flex';
-        localStorage.setItem('userId', data.id);
-      }
-    } else {
-      status.textContent = 'Первый вход — заполните профиль';
-      document.getElementById('full_name').value =
-        [user.first_name, user.last_name].filter(Boolean).join(' ');
-
-      if (!tgUsername) {
-        usernameInput.style.display = 'block';
-      }
-
-      regForm.style.display = 'flex';
     }
-  }
+}
 
-  regForm.addEventListener('submit', async (e) => {
+// Также добавьте проверку в обработчик формы submit (на всякий случай)
+regForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    // Повторная проверка черного списка перед отправкой
+    const { data: blacklistCheck } = await supabaseClient
+        .from('blacklisted_users')
+        .select('telegram_id')
+        .eq('telegram_id', tg.initDataUnsafe.user.id)
+        .maybeSingle();
+
+    if (blacklistCheck) {
+        alert('Ваш аккаунт заблокирован. Доступ ограничен.');
+        return;
+    }
+
+    // Остальной код обработчика формы остается без изменений...
     const fullName = document.getElementById('full_name').value.trim();
     const phone = document.getElementById('phone').value.trim() || null;
 
@@ -386,14 +466,15 @@
     const manualUsername = usernameInput.value.trim();
 
     if (!fullName) {
-      alert('Пожалуйста, укажите ФИО');
-      return;
+        alert('Пожалуйста, укажите ФИО');
+        return;
     }
 
     if (!tgUsername && !manualUsername) {
-      alert('Пожалуйста, укажите никнейм');
-      return;
+        alert('Пожалуйста, укажите никнейм');
+        return;
     }
+
 
     const userData = {
       telegram_id: tg.initDataUnsafe.user.id,
