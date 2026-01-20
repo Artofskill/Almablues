@@ -391,7 +391,7 @@
       <div class="trophy-icon">🏆</div>
       <h1>Рейтинг</h1>
       <div class="header-subtitle">Фанатов</div>
-      <p class="header-description">Топ самых активных участников фан-клуба Chelsea FC Kazakhstan</p>
+      <p class="header-description">Топ самых активных участников AlmaBlues</p>
     </div>
   </header>
 
@@ -429,10 +429,14 @@
 </div>
 
 <script>
+  
   // === Telegram ===
   const tg = window.Telegram.WebApp;
   tg.ready();
   tg.expand();
+
+ // ФИкс Ios:
+  if (tg.isVersionAtLeast('7.7')) { tg.disableVerticalSwipe(); }
 
   // === Supabase ===
   const supabaseUrl = 'https://zuapiixwzkleygaijulx.supabase.co';
