@@ -141,6 +141,7 @@
       text-decoration: none;
       margin-right: 10px;
       margin-top: 5px;
+      transition: background 0.3s;
     }
 
     .btn:hover {
@@ -148,13 +149,55 @@
     }
 
     .btn-disabled {
-      background: #666;
-      color: #999;
-      cursor: not-allowed;
+      background: #666 !important;
+      color: #999 !important;
+      cursor: not-allowed !important;
     }
 
     .btn-disabled:hover {
-      background: #666;
+      background: #666 !important;
+    }
+
+    .btn-warning {
+      background: #ff9800;
+      color: white;
+    }
+
+    .btn-warning:hover {
+      background: #e68900;
+    }
+
+    .btn-cancel {
+      background: #f44336;
+      color: white;
+    }
+
+    .btn-cancel:hover {
+      background: #d32f2f;
+    }
+
+    .cancel-disabled {
+      background: #666 !important;
+      color: #999 !important;
+      cursor: not-allowed !important;
+    }
+
+    .cancel-disabled:hover {
+      background: #666 !important;
+    }
+
+    .cancel-hint {
+      display: block;
+      font-size: 0.8rem;
+      color: #ff9800;
+      margin-top: 5px;
+    }
+
+    .cancel-disabled-hint {
+      display: block;
+      font-size: 0.8rem;
+      color: #999;
+      margin-top: 5px;
     }
 
     .empty-state {
@@ -172,6 +215,13 @@
       text-align: center;
       padding: 40px;
       color: var(--gold);
+    }
+
+    .time-info {
+      display: block;
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-top: 5px;
     }
 
     footer {
@@ -229,7 +279,9 @@
 
   // === Часовой пояс UTC+5 для Казахстана ===
   function getCurrentTimeUTC5() {
-    return new Date(); // Возвращаем текущее время устройства
+    const now = new Date();
+    const utc5 = new Date(now.getTime() + (5 * 60 * 60 * 1000));
+    return utc5;
   }
 
   function formatDateTimeUTC5(dateString) {
@@ -242,6 +294,53 @@
       minute: '2-digit',
       timeZone: 'Asia/Almaty'
     }) + ' (UTC+5)';
+  }
+
+  // Функция для расчета времени до мероприятия
+  function getTimeUntilEvent(eventDate) {
+    const now = getCurrentTimeUTC5();
+    const eventTime = new Date(eventDate);
+    const timeDiff = eventTime - now;
+    
+    if (timeDiff <= 0) return { hours: 0, minutes: 0, totalHours: 0 };
+    
+    const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return {
+      hours: hours,
+      minutes: minutes,
+      totalHours: timeDiff / (1000 * 60 * 60)
+    };
+  }
+
+  // Функция для отмены записи
+  async function cancelRegistration(registrationId) {
+    if (!confirm('Вы уверены, что хотите отменить запись на мероприятие?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabaseClient
+        .from('registrations')
+        .update({ 
+          status: 'cancelled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', registrationId)
+        .eq('user_id', userId);
+
+      if (error) {
+        alert('Ошибка при отмене записи: ' + error.message);
+        throw error;
+      }
+
+      alert('✅ Запись успешно отменена!');
+      // Перезагружаем список записей
+      loadMyRegistrations();
+    } catch (err) {
+      console.error('Error cancelling registration:', err);
+    }
   }
 
   // Загружаем записи пользователя
@@ -354,6 +453,14 @@
       
       listEl.innerHTML = html;
       
+      // Добавляем обработчики событий для кнопок отмены
+      document.querySelectorAll('.cancel-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const registrationId = this.getAttribute('data-registration-id');
+          cancelRegistration(registrationId);
+        });
+      });
+      
     } catch (err) {
       console.error('Error loading registrations:', err);
       document.getElementById('loading').innerHTML = '<p style="color: #ff6666;">Неожиданная ошибка при загрузке</p>';
@@ -377,12 +484,43 @@
                      'registration-item';
     
     let buttons = '';
+    let timeInfo = '';
+    
     if (reg.status === 'registered' && !isPast) {
-      buttons = `
-        <a href="event-participants.html?event_id=${event.id}" class="btn">
-          Участники
-        </a>
-      `;
+      // Проверяем время до мероприятия
+      const timeUntilEvent = getTimeUntilEvent(event.match_date);
+      const canCancel = timeUntilEvent.totalHours > 12;
+      
+      if (canCancel) {
+        // Можно отменить (более 12 часов до мероприятия)
+        buttons = `
+          <a href="event-participants.html?event_id=${event.id}" class="btn">
+            Участники
+          </a>
+          <button class="btn btn-cancel cancel-btn" data-registration-id="${reg.id}">
+            Отменить запись
+          </button>
+          <span class="cancel-hint">
+            ✓ Отмена доступна (осталось ${timeUntilEvent.hours} ч ${timeUntilEvent.minutes} мин)
+          </span>
+        `;
+      } else {
+        // Нельзя отменить (менее 12 часов до мероприятия)
+        buttons = `
+          <a href="event-participants.html?event_id=${event.id}" class="btn">
+            Участники
+          </a>
+          <button class="btn cancel-disabled" disabled>
+            Отменить запись
+          </button>
+          <span class="cancel-disabled-hint">
+            ✗ Отмена недоступна (менее 12 часов до мероприятия)
+          </span>
+        `;
+      }
+      
+      timeInfo = `<span class="time-info">До начала: ${timeUntilEvent.hours} ч ${timeUntilEvent.minutes} мин</span>`;
+      
     } else if (reg.status === 'checked_in') {
       buttons = `
         <span class="btn btn-disabled">✓ Посещено</span>
@@ -391,6 +529,10 @@
     } else if (reg.status === 'cancelled') {
       buttons = `
         <span class="btn btn-disabled">Отменено</span>
+      `;
+    } else if (isPast && reg.status === 'registered') {
+      buttons = `
+        <span class="btn btn-disabled">Мероприятие завершено</span>
       `;
     } else {
       buttons = `
@@ -409,6 +551,7 @@
           ${event.description ? `<br>📝 ${event.description}` : ''}
         </div>
         <div class="registration-status ${statusClass}">${statusText}</div>
+        ${timeInfo}
         <div>
           ${buttons}
         </div>
