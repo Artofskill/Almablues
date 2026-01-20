@@ -278,6 +278,7 @@
 
     <form id="reg-form">
       <input type="text" id="full_name" placeholder="Ваше ФИО (обязательно)" required>
+      <input type="text" id="username" placeholder="Никнейм (обязательно)" style="display:none;">
       <input type="tel" id="phone" placeholder="Номер телефона (обязательно)" required>
       <button type="submit">Зарегистрироваться</button>
     </form>
@@ -305,9 +306,10 @@
 
   const status = document.getElementById('status');
   const regForm = document.getElementById('reg-form');
+  const usernameInput = document.getElementById('username');
+
   regForm.style.display = 'none';
 
-  // Переменная для отслеживания времени показа "Welcome home"
   let welcomeHomeShownTime = 0;
 
   async function init() {
@@ -317,6 +319,8 @@
     }
 
     const user = tg.initDataUnsafe.user;
+    const tgUsername = user.username || null;
+
     status.textContent = `Привет, ${user.first_name}! Проверяем аккаунт...`;
 
     const { data, error } = await supabaseClient
@@ -332,18 +336,14 @@
     }
 
     if (data) {
-      // Проверяем, заполнено ли поле full_name
       if (data.full_name && data.full_name.trim() !== '') {
-        // Пользователь уже заполнил ФИО - показываем "Welcome home" на 2 секунды
         const welcomeTime = Date.now();
         welcomeHomeShownTime = welcomeTime;
-        
+
         status.textContent = 'Welcome home';
         status.classList.add('welcome-home');
-        
-        // Ждем минимум 2 секунды перед переходом
+
         setTimeout(() => {
-          // Проверяем, что это тот же самый welcome home (пользователь не ушел с экрана)
           if (welcomeHomeShownTime === welcomeTime) {
             localStorage.setItem('userId', data.id);
             localStorage.setItem('userFullName', data.full_name);
@@ -351,18 +351,26 @@
           }
         }, 4000);
       } else {
-        // Пользователь есть в системе, но ФИО не заполнено - идем в profile
         status.textContent = 'Пожалуйста, заполните профиль';
-        document.getElementById('full_name').value = 
+        document.getElementById('full_name').value =
           [user.first_name, user.last_name].filter(Boolean).join(' ');
+
+        if (!tgUsername) {
+          usernameInput.style.display = 'block';
+        }
+
         regForm.style.display = 'flex';
         localStorage.setItem('userId', data.id);
       }
     } else {
-      // Пользователя нет в системе - регистрация
       status.textContent = 'Первый вход — заполните профиль';
       document.getElementById('full_name').value =
         [user.first_name, user.last_name].filter(Boolean).join(' ');
+
+      if (!tgUsername) {
+        usernameInput.style.display = 'block';
+      }
+
       regForm.style.display = 'flex';
     }
   }
@@ -373,21 +381,28 @@
     const fullName = document.getElementById('full_name').value.trim();
     const phone = document.getElementById('phone').value.trim() || null;
 
+    const tgUsername = tg.initDataUnsafe.user.username || null;
+    const manualUsername = usernameInput.value.trim();
+
     if (!fullName) {
       alert('Пожалуйста, укажите ФИО');
       return;
     }
 
+    if (!tgUsername && !manualUsername) {
+      alert('Пожалуйста, укажите никнейм');
+      return;
+    }
+
     const userData = {
       telegram_id: tg.initDataUnsafe.user.id,
-      username: tg.initDataUnsafe.user.username || null,
+      username: tgUsername || manualUsername,
       full_name: fullName,
       phone: phone,
       points: 0,
       membership_status: 'New'
     };
 
-    // Проверяем, есть ли уже пользователь в системе
     const { data: existingUser } = await supabaseClient
       .from('users')
       .select('id')
@@ -395,24 +410,23 @@
       .maybeSingle();
 
     let result;
+
     if (existingUser) {
-      // Обновляем существующего пользователя
       const { data, error } = await supabaseClient
         .from('users')
         .update(userData)
         .eq('id', existingUser.id)
         .select()
         .single();
-      
+
       result = { data, error };
     } else {
-      // Создаем нового пользователя
       const { data, error } = await supabaseClient
         .from('users')
         .insert(userData)
         .select()
         .single();
-      
+
       result = { data, error };
     }
 
@@ -424,13 +438,13 @@
     localStorage.setItem('userId', result.data.id);
     localStorage.setItem('userFullName', result.data.full_name);
     status.textContent = 'Регистрация завершена!';
-    
-    // После регистрации сразу идем в dashboard
+
     setTimeout(() => location.href = 'dashboard.html', 1200);
   });
 
   init();
 </script>
+
 
 </body>
 </html>
