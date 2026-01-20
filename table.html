@@ -1,70 +1,124 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Top Players — AlmaBlues</title>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --chelsea-blue: #034694;
-            --dark: #001028;
-            --gold: #D4A017;
-        }
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: Roboto, sans-serif;
-            background: linear-gradient(180deg, #001028, #000814);
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        h1 {
-            font-family: Oswald, sans-serif;
-            color: var(--gold);
-            margin: 0;
-        }
-        .subtitle {
-            opacity: .7;
-            margin-bottom: 20px;
-        }
-        .widget-container {
-            width: 100%;
-            max-width: 900px;
-            background: rgba(255, 255, 255, .03);
-            border-radius: 14px;
-            padding: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, .4);
-        }
-        .back-btn {
-            margin-top: 25px;
-            padding: 12px 26px;
-            background: var(--chelsea-blue);
-            color: #fff;
-            text-decoration: none;
-            border-radius: 6px;
-            font-family: Oswald, sans-serif;
-        }
-    </style>
-</head>
-     <a class="back-btn" href="index.html">НА ГЛАВНУЮ</a>
-<body>
-    <h1>AlmaBlues</h1>
-    <div class="subtitle">English Premier League</div>
-    
-<div id="widget-f8z6mki314nv" class="scoreaxis-widget" style="width: 480px;height: 640px;font-size: 14px;background-color: #ffffff;color: #141416;border: 1px solid;border-color: #ecf1f7;overflow: auto;"><script src="https://widgets.scoreaxis.com/api/football/league-table/6232265abf1fa71a672159ec?widgetId=f8z6mki314nv&lang=en&teamLogo=1&tableLines=0&homeAway=1&header=1&position=1&goals=1&gamesCount=1&diff=0&winCount=1&drawCount=1&loseCount=1&lastGames=0&points=1&teamsLimit=all&links=1&font=heebo&fontSize=14&widgetWidth=480&widgetHeight=640&bodyColor=%23ffffff&textColor=%23141416&linkColor=%23141416&borderColor=%23ecf1f7&tabColor=%23f3f8fd" async></script><div class="widget-main-link" style="padding: 6px 12px;font-weight: 500;">Live data by <a href="https://www.scoreaxis.com/" style="color: inherit;">Scoreaxis</a></div></div>
-    
-    <div class="subtitle">League Top Players</div>
-    
-    <div id="widget-qwdkmki273az" class="scoreaxis-widget" style="width: 400px;height: auto;font-size: 14px;background-color: #ffffff;color: #141416;border: 1px solid;border-color: #ecf1f7;overflow: auto;"><script src="https://widgets.scoreaxis.com/api/football/league-top-players/6232265abf1fa71a672159ec?widgetId=qwdkmki273az&lang=en&playersCount=10&goalsBlock=1&assistsBlock=1&cardsBlock=1&font=heebo&fontSize=14&widgetWidth=400&widgetHeight=auto&bodyColor=%23ffffff&textColor=%23141416&linkColor=%23141416&borderColor=%23ecf1f7&tabColor=%23f3f8fd" async></script><div class="widget-main-link" style="padding: 6px 12px;font-weight: 500;">Live data by <a href="https://www.scoreaxis.com/" style="color: inherit;">Scoreaxis</a></div></div>
-    
-    <div class="subtitle">Team Stats</div>
-    
-    <div id="widget-zphpmki2b0t2" class="scoreaxis-widget" style="width: 400px;height: auto;font-size: 14px;background-color: #ffffff;color: #141416;border: 1px solid;border-color: #ecf1f7;overflow: auto;"><script src="https://widgets.scoreaxis.com/api/football/team-info/62321b27adaf4b2bd73deaea?widgetId=zphpmki2b0t2&lang=en&statsBlock=1&playersBlock=1&matchesBlock=1&links=1&font=heebo&fontSize=14&widgetWidth=400&widgetHeight=auto&bodyColor=%23ffffff&textColor=%23141416&linkColor=%23141416&borderColor=%23ecf1f7&tabColor=%23f3f8fd" async></script><div class="widget-main-link" style="padding: 6px 12px;font-weight: 500;">Live data by <a href="https://www.scoreaxis.com/" style="color: inherit;">Scoreaxis</a></div></div>
-</div>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Top Players — AlmaBlues</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --chelsea-blue: #034694;
+      --dark: #001028;
+      --darker: #000814;
+      --gold: #D4A017;
+      --text: #e0e0e0;
+    }
 
-    <a class="back-btn" href="index.html">НА ГЛАВНУЮ</a>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(180deg, var(--dark), var(--darker));
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(2.2rem, 8vw, 3.5rem);
+      font-weight: 700;
+      color: var(--gold);
+      margin: 0.4em 0 0.1em;
+      text-align: center;
+    }
+
+    .subtitle {
+      font-size: clamp(1.1rem, 4.5vw, 1.4rem);
+      opacity: 0.75;
+      margin-bottom: 1.8rem;
+      text-align: center;
+    }
+
+    .content {
+      width: 100%;
+      max-width: 920px;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .widget-wrapper {
+      width: 100%;
+      max-width: 480px; /* максимум как у виджета */
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+    }
+
+    .widget-wrapper > div.scoreaxis-widget {
+      width: 100% !important; /* перебиваем inline 480px */
+      height: auto !important;
+      min-height: 420px;
+    }
+
+    .back-btn {
+      margin: 2rem auto 1rem;
+      padding: 12px 32px;
+      background: var(--chelsea-blue);
+      color: white;
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 6px;
+      transition: background 0.2s;
+      display: inline-block;
+    }
+
+    .back-btn:hover {
+      background: #0252b3;
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 12px 8px; }
+      .widget-wrapper { padding: 6px; }
+      .back-btn { padding: 10px 28px; font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>AlmaBlues</h1>
+  <div class="subtitle">English Premier League</div>
+
+  <div class="content">
+
+    <div class="widget-wrapper">
+      <div id="widget-2qcbmkm65b8h" class="scoreaxis-widget" style="width: 480px;height: 480px;font-size: 19px;background-color: #ffffff;color: #141416;border: 1px solid;border-color: #ffffff;overflow: auto;">
+        <script src="https://widgets.scoreaxis.com/api/football/league-table/6232265abf1fa71a672159ec?widgetId=2qcbmkm65b8h&lang=ru&teamLogo=0&tableLines=0&homeAway=0&header=1&position=1&goals=0&gamesCount=1&diff=1&winCount=0&drawCount=0&loseCount=0&lastGames=0&points=1&teamsLimit=10&links=0&font=heebo&fontSize=19&widgetWidth=480&widgetHeight=480&bodyColor=%23ffffff&textColor=%23141416&linkColor=%23141416&borderColor=%23ffffff&tabColor=%23ffffff" async></script>
+        <div class="widget-main-link" style="padding: 6px 12px;font-weight: 500;">Live data by <a href="https://www.scoreaxis.com/" style="color: inherit;">Scoreaxis</a></div>
+      </div>
+    </div>
+
+    <div class="widget-wrapper">
+      <div id="widget-l2romkm6e1no" class="scoreaxis-widget" style="width: 480px;height: 480px;font-size: 19px;background-color: #ffffff;color: #050505;border: 1px solid;border-color: #fcfcfc;overflow: auto;">
+        <script src="https://widgets.scoreaxis.com/api/football/team-info/62321b27adaf4b2bd73deaea?widgetId=l2romkm6e1no&lang=ru&statsBlock=0&playersBlock=0&matchesBlock=1&links=0&font=timesNewRoman&fontSize=19&widgetWidth=480&widgetHeight=480&bodyColor=%23ffffff&textColor=%23050505&linkColor=%23030303&borderColor=%23fcfcfc&tabColor=%23f3f8fd" async></script>
+        <div class="widget-main-link" style="padding: 6px 12px;font-weight: 500;">Live data by <a href="https://www.scoreaxis.com/" style="color: inherit;">Scoreaxis</a></div>
+      </div>
+    </div>
+
+  </div>
+
+  <a href="index.html" class="back-btn">НА ГЛАВНУЮ</a>
+
 </body>
 </html>
