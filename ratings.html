@@ -430,9 +430,10 @@
 
 <script>
    // === Telegram ===
-  const tg = window.Telegram.WebApp;
-  tg.ready();
-  tg.expand();
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+tg.disableVerticalSwipes();
 
   // === Supabase ===
   const supabaseUrl = 'https://zuapiixwzkleygaijulx.supabase.co';
