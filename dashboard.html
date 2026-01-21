@@ -769,36 +769,46 @@ function formatDateTimeUTC5(dateString) {
     }
   }
 
-  async function checkMOTMStatus() {
+ async function checkMOTMStatus() {
   try {
-    const { data: event } = await supabase
+    // 1. Получаем самый свежий матч
+    const { data: event, error } = await supabaseClient
       .from('events')
       .select('match_date')
       .order('match_date', { ascending: false })
       .limit(1)
       .single();
 
-    if (event) {
-      const matchTime = new Date(event.match_date).getTime();
-      const now = new Date().getTime();
-      const threeHoursAfter = matchTime + (3 * 60 * 60 * 1000);
+    if (error || !event) return;
 
-      // Если сейчас время матча или прошло не более 3 часов после начала
-      if (now >= matchTime && now <= threeHoursAfter) {
-        document.getElementById('motm-dynamic-btn').style.display = 'flex';
-      }
+    // 2. Превращаем строку из базы в объект даты JS 
+    // JS автоматически распарсит строку "2026-01-21 20:00:00+00" и поймет, что это UTC
+    const matchTime = new Date(event.match_date); 
+    
+    // 3. Получаем текущее время устройства (оно уже будет в UTC+5, если ты в Алматы)
+    const now = new Date();
+
+    // 4. Настраиваем окно видимости:
+    // Показываем кнопку за 15 минут до начала и в течение 4 часов после начала
+    const startTime = new Date(matchTime.getTime() - (15 * 60 * 1000)); 
+    const endTime = new Date(matchTime.getTime() + (4 * 60 * 1000 * 60));
+
+    console.log("Текущее время:", now.toString());
+    console.log("Время начала показа:", startTime.toString());
+    console.log("Время окончания показа:", endTime.toString());
+
+    // 5. Условие показа
+    if (now >= startTime && now <= endTime) {
+      const btn = document.getElementById('motm-dynamic-btn');
+      if (btn) btn.style.display = 'flex';
+    } else {
+      console.log("Голосование сейчас недоступно по времени");
     }
-  } catch (e) { console.log("Ошибка проверки статуса матча"); }
-}
 
-// Вызови эту функцию в конце своего init()
-checkMOTMStatus();
-  async function updateMembershipStatus() {
-    const { data, error } = await supabaseClient
-      .from('users')
-      .select('membership_status, points')
-      .eq('id', userId)
-      .single();
+  } catch (e) { 
+    console.error("Ошибка проверки MOTM:", e); 
+  }
+}
 
     if (!error && data) {
       const statusElement = document.getElementById('user-status');
