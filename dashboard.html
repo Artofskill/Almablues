@@ -67,42 +67,6 @@
       gap: 10px;
     }
 
-    /* Анимация пульсации для золотой кнопки */
-@keyframes gold-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(212, 160, 23, 0.4); }
-  70% { box-shadow: 0 0 0 15px rgba(212, 160, 23, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(212, 160, 23, 0); }
-}
-
-.motm-live-btn {
-  display: none; /* Скрыта изначально */
-  background: linear-gradient(45deg, var(--gold), #E8B923);
-  color: #000 !important;
-  font-weight: 800;
-  text-transform: uppercase;
-  padding: 15px;
-  border-radius: 12px;
-  text-align: center;
-  text-decoration: none;
-  margin-bottom: 20px;
-  font-family: 'Oswald', sans-serif;
-  animation: gold-pulse 2s infinite;
-  border: none;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.motm-live-btn span {
-  background: #000;
-  color: #fff;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  animation: blink 1s infinite;
-}
-
-@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     .user-name {
       font-weight: bold;
       font-size: 1.1rem;
@@ -508,11 +472,7 @@
       <span id="user-points">0</span> очков
     </div>
   </div>
-  
-<a href="motm.html" id="motm-dynamic-btn" class="motm-live-btn">
-  <span>LIVE</span> Голосование за игрока матча открыто!
-</a>
-  
+
   <div class="dashboard-grid">
     
     <!-- Заявка на членство -->
@@ -769,42 +729,12 @@ function formatDateTimeUTC5(dateString) {
     }
   }
 
- async function checkMOTMStatus() {
-  try {
-    const { data: event, error } = await supabaseClient
-      .from('events')
-      .select('match_date')
-      .order('match_date', { ascending: false })
-      .limit(1)
+  async function updateMembershipStatus() {
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('membership_status, points')
+      .eq('id', userId)
       .single();
-
-    if (error || !event) return;
-
-    // Время начала матча (JS сам поймет, что это UTC, если в строке есть +00 или Z)
-    const matchTime = new Date(event.match_date); 
-    const now = new Date();
-
-    // Диапазон: показываем кнопку за 15 минут до матча и в течение 4 часов после
-    const startTime = new Date(matchTime.getTime() - (15 * 60 * 1000)); 
-    const endTime = new Date(matchTime.getTime() + (4 * 60 * 60 * 1000));
-
-    console.log("=== Проверка MOTM ===");
-    console.log("Сейчас:", now);
-    console.log("Матч начнется (локально):", matchTime);
-
-    if (now >= startTime && now <= endTime) {
-      const btn = document.getElementById('motm-dynamic-btn');
-      if (btn) {
-          btn.style.display = 'flex';
-          console.log("Кнопка MOTM включена");
-      }
-    } else {
-      console.log("Кнопка MOTM скрыта (не время)");
-    }
-  } catch (e) {
-    console.error("Ошибка в checkMOTMStatus:", e);
-  }
-}
 
     if (!error && data) {
       const statusElement = document.getElementById('user-status');
@@ -1600,7 +1530,6 @@ function formatDateTimeUTC5(dateString) {
   async function init() {
     await loadUserData();
     await loadEvents();
-    await checkMOTMStatus();
     
     // Добавляем обработчики для кнопок членства
     document.getElementById('membership-btn').addEventListener('click', applyForMembership);
