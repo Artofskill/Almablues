@@ -1,136 +1,100 @@
-const players = [
-    "Cole Palmer", "Nicolas Jackson", "Enzo Fernández", 
-    "Moises Caicedo", "Levi Colwill", "Reece James", 
-    "Robert Sánchez", "Noni Madueke", "Christopher Nkunku"
-  ];
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MOTM — AlmaBlues</title>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root { --bg-dark: #001028; --chelsea-blue: #034694; --gold: #D4A017; --white: #ffffff; --card-bg: rgba(255, 255, 255, 0.05); }
+    body { font-family: 'Roboto', sans-serif; background: var(--bg-dark); color: var(--white); margin: 0; padding: 20px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 450px; }
+    .back-link { color: var(--gold); text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 20px; }
+    .header { text-align: center; margin-bottom: 25px; }
+    h1 { font-family: 'Oswald', sans-serif; color: var(--gold); text-transform: uppercase; margin: 5px 0; }
+    .card { background: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid rgba(212, 160, 23, 0.15); }
+    .player-row { margin-bottom: 15px; cursor: pointer; padding: 10px; border-radius: 8px; transition: 0.2s; }
+    .player-row:hover { background: rgba(255,255,255,0.08); }
+    .player-info { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .progress-bar-bg { background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden; }
+    .progress-bar-fill { background: var(--chelsea-blue); height: 100%; width: 0%; transition: width 1s ease-out; }
+    .selected { border: 1px solid var(--gold); background: rgba(212, 160, 23, 0.05); }
+    .selected .progress-bar-fill { background: var(--gold); }
+    .selected .player-info { color: var(--gold); font-weight: bold; }
+  </style>
+</head>
+<body>
+<div class="container">
+    <a href="dashboard.html" class="back-link">← Назад</a>
+    <div class="header">
+        <p style="color: var(--gold); font-weight: bold; margin: 0; letter-spacing: 2px;">MAN OF THE MATCH</p>
+        <h1 id="match-name">Загрузка...</h1>
+        <div id="match-date" style="color:#888; font-size:14px; margin-top:5px;"></div>
+    </div>
+    <div id="main-content"></div>
+</div>
 
-  // Берем userId из localStorage (как в твоем dashboard.html)
-  const userId = localStorage.getItem('userId'); 
+<script>
+    const supabaseUrl = 'https://zuapiixwzkleygaijulx.supabase.co';
+    const supabaseKey = 'sb_publishable_Jsth-2GViNz5Ev3UWtrWTg_fbg4GAKx';
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+    const userId = localStorage.getItem('userId');
 
-  async function init() {
-    try {
-      console.log("Запуск... ID пользователя:", userId);
-      
-      // 1. Ищем самый свежий матч "Chelsea - Pafos"
-      const { data: event, error } = await supabase
-        .from('events')
-        .select('*')
-        .order('match_date', { ascending: false })
-        .limit(1)
-        .single();
+    const playersList = ["Cole Palmer", "Nicolas Jackson", "Enzo Fernández", "Moises Caicedo", "Levi Colwill", "Reece James", "Robert Sánchez", "Noni Madueke", "Christopher Nkunku", "Pedro Neto"];
 
-      if (error || !event) {
-        document.getElementById('main-content').innerHTML = '<div class="card">Матчи не найдены</div>';
-        return;
-      }
-
-      document.getElementById('match-title').innerText = event.match_name;
-      document.getElementById('match-date').innerText = new Date(event.match_date).toLocaleString('ru-RU');
-      
-      // ПРОВЕРКА: Если таблица motm_votes пустая, мы в любом случае показываем форму голосования
-      checkUserVote(event.id);
-
-    } catch (err) {
-      console.error("Ошибка:", err);
-      document.getElementById('main-content').innerHTML = 'Ошибка загрузки данных.';
-    }
-  }
-
-  async function checkUserVote(eventId) {
-    if (!userId) {
-      document.getElementById('main-content').innerHTML = `
-        <div class="card" style="text-align:center;">
-          <p>⚠️ Вы не авторизованы (userId не найден).</p>
-          <p>Зайдите сначала в <a href="dashboard.html" style="color:var(--gold);">Dashboard</a></p>
-        </div>`;
-      return;
-    }
-
-    const { data: vote } = await supabase
-      .from('motm_votes')
-      .select('*')
-      .eq('event_id', eventId)
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (vote) {
-      console.log("Пользователь уже голосовал за:", vote.player_name);
-      showResults(eventId, vote.player_name);
-    } else {
-      console.log("Пользователь еще не голосовал.");
-      renderVotingForm(eventId);
-    }
-  }
-
-  function renderVotingForm(eventId) {
-    let html = '<div class="card"><h3>Кто лучший игрок матча?</h3>';
-    players.forEach(p => {
-      html += `
-        <div class="player-row" onclick="castVote('${eventId}', '${p}')">
-          <div class="player-info"><span>${p}</span></div>
-          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 0%"></div></div>
-        </div>`;
-    });
-    html += '</div>';
-    document.getElementById('main-content').innerHTML = html;
-  }
-
-  async function castVote(eventId, playerName) {
-    const { error } = await supabase
-      .from('motm_votes')
-      .insert({ 
-        event_id: eventId, 
-        user_id: userId, 
-        player_name: playerName 
-      });
-
-    if (error) {
-      alert("Ошибка при сохранении голоса: " + error.message);
-    } else {
-      // Пытаемся начислить баллы (если функция создана)
-      try {
-        await supabase.rpc('increment_points', { user_id: userId, amount: 5 });
-      } catch(e) { console.log("Баллы не начислены: функция не найдена"); }
-      
-      showResults(eventId, playerName);
-    }
-  }
-
-  async function showResults(eventId, userChoice = null) {
-    const { data: votes } = await supabase
-      .from('motm_votes')
-      .select('player_name')
-      .eq('event_id', eventId);
-
-    const total = votes ? votes.length : 0;
-    const stats = {};
-    if (votes) {
-      votes.forEach(v => stats[v.player_name] = (stats[v.player_name] || 0) + 1);
+    async function init() {
+        if (!userId) {
+            document.getElementById('main-content').innerHTML = '<div class="card" style="text-align:center;">Пожалуйста, войдите через Dashboard.</div>';
+            return;
+        }
+        const { data: event } = await supabaseClient.from('events').select('*').order('match_date', { ascending: false }).limit(1).single();
+        if (event) {
+            document.getElementById('match-name').innerText = event.match_name;
+            document.getElementById('match-date').innerText = new Date(event.match_date).toLocaleString('ru-RU');
+            checkUserVote(event.id);
+        }
     }
 
-    let html = '<div class="card"><h3>Текущие результаты</h3>';
-    
-    // Сортируем игроков по количеству голосов
-    const sortedPlayers = [...players].sort((a,b) => (stats[b]||0) - (stats[a]||0));
+    async function checkUserVote(eventId) {
+        const { data: vote } = await supabaseClient.from('motm_votes').select('*').eq('event_id', eventId).eq('user_id', userId).maybeSingle();
+        vote ? showResults(eventId, vote.player_name) : renderVotingForm(eventId);
+    }
 
-    sortedPlayers.forEach(p => {
-      const count = stats[p] || 0;
-      const percent = total > 0 ? Math.round((count / total) * 100) : 0;
-      const isSelected = p === userChoice;
+    function renderVotingForm(eventId) {
+        let html = '<div class="card">';
+        playersList.forEach(name => {
+            html += `<div class="player-row" onclick="castVote('${eventId}', '${name}')">
+                <div class="player-info"><span>${name}</span></div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill"></div></div>
+            </div>`;
+        });
+        document.getElementById('main-content').innerHTML = html + '</div>';
+    }
 
-      html += `
-        <div class="player-row ${isSelected ? 'selected' : ''}">
-          <div class="player-info">
-            <span>${p} ${isSelected ? '⭐' : ''}</span>
-            <span>${percent}% (${count})</span>
-          </div>
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill" style="width: ${percent}%"></div>
-          </div>
-        </div>`;
-    });
-    html += `<p style="text-align:center; margin-top:15px; font-size:12px; opacity:0.6;">Всего голосов: ${total}</p></div>`;
-    document.getElementById('main-content').innerHTML = html;
-  }
+    async function castVote(eventId, playerName) {
+        const { error } = await supabaseClient.from('motm_votes').insert({ event_id: eventId, user_id: userId, player_name: playerName });
+        if (!error) {
+            await supabaseClient.rpc('increment_points', { user_id: userId, amount: 5 });
+            showResults(eventId, playerName);
+        }
+    }
 
-  init();
+    async function showResults(eventId, userChoice = null) {
+        const { data: votes } = await supabaseClient.from('motm_votes').select('player_name').eq('event_id', eventId);
+        const stats = {};
+        votes?.forEach(v => stats[v.player_name] = (stats[v.player_name] || 0) + 1);
+        let html = '<div class="card">';
+        [...playersList].sort((a,b) => (stats[b]||0) - (stats[a]||0)).forEach(name => {
+            const percent = votes?.length ? Math.round(((stats[name]||0)/votes.length)*100) : 0;
+            html += `<div class="player-row ${name===userChoice?'selected':''}">
+                <div class="player-info"><span>${name} ${name===userChoice?'⭐':''}</span><span>${percent}%</span></div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${percent}%"></div></div>
+            </div>`;
+        });
+        document.getElementById('main-content').innerHTML = html + '</div>';
+    }
+    init();
+</script>
+</body>
+</html>
