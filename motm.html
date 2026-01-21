@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MOTM — AlmaBlues</title>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg-dark: #001028; --chelsea-blue: #034694; --gold: #D4A017; --white: #ffffff;
+      --card-bg: rgba(255, 255, 255, 0.05);
+    }
+    body { font-family: 'Roboto', sans-serif; background: var(--bg-dark); color: var(--white); margin: 0; padding: 20px; }
+    .container { max-width: 500px; margin: 0 auto; }
+    
+    .header { text-align: center; margin-bottom: 30px; }
+    h1 { font-family: 'Oswald', sans-serif; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
+    
+    .card { background: var(--card-bg); border-radius: 15px; padding: 20px; border: 1px solid rgba(212, 160, 23, 0.2); margin-bottom: 20px; }
+    
+    .player-row { margin-bottom: 18px; cursor: pointer; transition: 0.3s; }
+    .player-row:hover { opacity: 0.8; }
+    
+    .player-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 500; }
+    
+    .progress-bar-bg { background: rgba(255,255,255,0.1); height: 10px; border-radius: 5px; overflow: hidden; }
+    .progress-bar-fill { 
+      background: linear-gradient(90deg, var(--chelsea-blue), #0056b3); 
+      height: 100%; width: 0%; transition: width 0.8s ease-out; 
+    }
+    
+    .selected .progress-bar-fill { background: var(--gold); }
+    .selected .player-info { color: var(--gold); }
+
+    .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-bottom: 10px; background: var(--chelsea-blue); }
+    
+    .back-link { color: var(--gold); text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 20px; }
+    .loading { text-align: center; color: #888; padding: 40px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <a href="dashboard.html" class="back-link">← Вернуться в кабинет</a>
+  
+  <div class="header">
+    <div id="status-container"></div>
+    <h1 id="match-title">Загрузка матча...</h1>
+    <p id="match-date" style="color: #888; font-size: 14px;"></p>
+  </div>
+
+  <div id="main-content">
+    <div class="loading">Ищем активные матчи в базе...</div>
+  </div>
+</div>
+
+<script>
+  // Настройки Supabase (из твоих файлов)
+  const supabaseUrl = 'https://zuapiixwzkleygaijulx.supabase.co';
+  const supabaseKey = 'sb_publishable_Jsth-2GViNz5Ev3UWtrWTg_fbg4GAKx';
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+  const userId = localStorage.getItem('userId'); 
+
+  // Список игроков (можно потом грузить из БД)
+  const players = [
+    "Cole Palmer", "Nicolas Jackson", "Enzo Fernández", 
+    "Moises Caicedo", "Levi Colwill", "Reece James", 
+    "Robert Sánchez", "Noni Madueke", "Christopher Nkunku"
+  ];
+
+  async function init() {
+    try {
+      const now = new Date();
+      const threeHoursAgo = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+
+      // 1. Ищем последний матч
+      const { data: event, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('match_date', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !event) {
+        document.getElementById('main-content').innerHTML = '<div class="card">Матчи не найдены</div>';
+        return;
+      }
+
+      const matchDate = new Date(event.match_date);
+      const isLive = (now >= matchDate && now <= new Date(matchDate.getTime() + 3*60*60*1000));
+
+      document.getElementById('match-title').innerText = event.match_name;
+      document.getElementById('match-date').innerText = matchDate.toLocaleString('ru-RU');
+      
+      if (isLive) {
+        document.getElementById('status-container').innerHTML = '<span class="status-badge" style="background: #28a745;">Голосование открыто</span>';
+        checkUserVote(event.id);
+      } else {
+        document.getElementById('status-container').innerHTML = '<span class="status-badge">Архив голосования</span>';
+        showResults(event.id);
+      }
+
+    } catch (err) {
+      console.error(err);
+      document.getElementById('main-content').innerHTML = 'Ошибка при загрузке данных.';
+    }
+  }
+
+  async function checkUserVote(eventId) {
+    const { data: vote } = await supabase
+      .from('motm_votes')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (vote) {
+      showResults(eventId, vote.player_name);
+    } else {
+      renderVotingForm(eventId);
+    }
+  }
+
+  function renderVotingForm(eventId) {
+    let html = '<div class="card"><h3>Кто был лучшим сегодня?</h3>';
+    players.forEach(p => {
+      html += `
+        <div class="player-row" onclick="castVote('${eventId}', '${p}')">
+          <div class="player-info"><span>${p}</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 0%"></div></div>
+        </div>`;
+    });
+    html += '</div>';
+    document.getElementById('main-content').innerHTML = html;
+  }
+
+  async function castVote(eventId, playerName) {
+    if (!userId) { alert("Войдите в систему!"); return; }
+    
+    const { error } = await supabase
+      .from('motm_votes')
+      .insert({ event_id: eventId, user_id: userId, player_name: playerName });
+
+    if (error) {
+      alert("Ошибка или вы уже голосовали");
+    } else {
+      // Начисляем 5 баллов через функцию, которую мы создали в SQL
+      await supabase.rpc('increment_points', { user_id: userId, amount: 5 });
+      showResults(eventId, playerName);
+    }
+  }
+
+  async function showResults(eventId, userChoice = null) {
+    const { data: votes } = await supabase
+      .from('motm_votes')
+      .select('player_name')
+      .eq('event_id', eventId);
+
+    const total = votes.length || 0;
+    const stats = {};
+    votes.forEach(v => stats[v.player_name] = (stats[v.player_name] || 0) + 1);
+
+    let html = '<div class="card"><h3>Результаты матча</h3>';
+    
+    // Сортируем: сначала те, у кого больше голосов
+    const sortedPlayers = players.sort((a,b) => (stats[b]||0) - (stats[a]||0));
+
+    sortedPlayers.forEach(p => {
+      const count = stats[p] || 0;
+      const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+      const isSelected = p === userChoice;
+
+      html += `
+        <div class="player-row ${isSelected ? 'selected' : ''}">
+          <div class="player-info">
+            <span>${p} ${isSelected ? '✅' : ''}</span>
+            <span>${percent}%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" style="width: ${percent}%"></div>
+          </div>
+        </div>`;
+    });
+    html += `<p style="text-align:center; font-size:12px; color:#888; margin-top:10px;">Всего голосов: ${total}</p></div>`;
+    document.getElementById('main-content').innerHTML = html;
+  }
+
+  init();
+</script>
+
+</body>
+</html>
