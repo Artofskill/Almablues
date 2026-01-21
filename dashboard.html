@@ -67,6 +67,42 @@
       gap: 10px;
     }
 
+    /* Анимация пульсации для золотой кнопки */
+@keyframes gold-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(212, 160, 23, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(212, 160, 23, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(212, 160, 23, 0); }
+}
+
+.motm-live-btn {
+  display: none; /* Скрыта изначально */
+  background: linear-gradient(45deg, var(--gold), #E8B923);
+  color: #000 !important;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 15px;
+  border-radius: 12px;
+  text-align: center;
+  text-decoration: none;
+  margin-bottom: 20px;
+  font-family: 'Oswald', sans-serif;
+  animation: gold-pulse 2s infinite;
+  border: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.motm-live-btn span {
+  background: #000;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     .user-name {
       font-weight: bold;
       font-size: 1.1rem;
@@ -472,7 +508,11 @@
       <span id="user-points">0</span> очков
     </div>
   </div>
-
+  
+<a href="motm.html" id="motm-dynamic-btn" class="motm-live-btn">
+  <span>LIVE</span> Голосование за игрока матча открыто!
+</a>
+  
   <div class="dashboard-grid">
     
     <!-- Заявка на членство -->
@@ -729,6 +769,30 @@ function formatDateTimeUTC5(dateString) {
     }
   }
 
+  async function checkMOTMStatus() {
+  try {
+    const { data: event } = await supabase
+      .from('events')
+      .select('match_date')
+      .order('match_date', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (event) {
+      const matchTime = new Date(event.match_date).getTime();
+      const now = new Date().getTime();
+      const threeHoursAfter = matchTime + (3 * 60 * 60 * 1000);
+
+      // Если сейчас время матча или прошло не более 3 часов после начала
+      if (now >= matchTime && now <= threeHoursAfter) {
+        document.getElementById('motm-dynamic-btn').style.display = 'flex';
+      }
+    }
+  } catch (e) { console.log("Ошибка проверки статуса матча"); }
+}
+
+// Вызови эту функцию в конце своего init()
+checkMOTMStatus();
   async function updateMembershipStatus() {
     const { data, error } = await supabaseClient
       .from('users')
