@@ -771,7 +771,6 @@ function formatDateTimeUTC5(dateString) {
 
  async function checkMOTMStatus() {
   try {
-    // 1. Получаем самый свежий матч
     const { data: event, error } = await supabaseClient
       .from('events')
       .select('match_date')
@@ -781,32 +780,29 @@ function formatDateTimeUTC5(dateString) {
 
     if (error || !event) return;
 
-    // 2. Превращаем строку из базы в объект даты JS 
-    // JS автоматически распарсит строку "2026-01-21 20:00:00+00" и поймет, что это UTC
+    // Время начала матча (JS сам поймет, что это UTC, если в строке есть +00 или Z)
     const matchTime = new Date(event.match_date); 
-    
-    // 3. Получаем текущее время устройства (оно уже будет в UTC+5, если ты в Алматы)
     const now = new Date();
 
-    // 4. Настраиваем окно видимости:
-    // Показываем кнопку за 15 минут до начала и в течение 4 часов после начала
+    // Диапазон: показываем кнопку за 15 минут до матча и в течение 4 часов после
     const startTime = new Date(matchTime.getTime() - (15 * 60 * 1000)); 
-    const endTime = new Date(matchTime.getTime() + (4 * 60 * 1000 * 60));
+    const endTime = new Date(matchTime.getTime() + (4 * 60 * 60 * 1000));
 
-    console.log("Текущее время:", now.toString());
-    console.log("Время начала показа:", startTime.toString());
-    console.log("Время окончания показа:", endTime.toString());
+    console.log("=== Проверка MOTM ===");
+    console.log("Сейчас:", now);
+    console.log("Матч начнется (локально):", matchTime);
 
-    // 5. Условие показа
     if (now >= startTime && now <= endTime) {
       const btn = document.getElementById('motm-dynamic-btn');
-      if (btn) btn.style.display = 'flex';
+      if (btn) {
+          btn.style.display = 'flex';
+          console.log("Кнопка MOTM включена");
+      }
     } else {
-      console.log("Голосование сейчас недоступно по времени");
+      console.log("Кнопка MOTM скрыта (не время)");
     }
-
-  } catch (e) { 
-    console.error("Ошибка проверки MOTM:", e); 
+  } catch (e) {
+    console.error("Ошибка в checkMOTMStatus:", e);
   }
 }
 
@@ -1604,6 +1600,7 @@ function formatDateTimeUTC5(dateString) {
   async function init() {
     await loadUserData();
     await loadEvents();
+    await checkMOTMStatus();
     
     // Добавляем обработчики для кнопок членства
     document.getElementById('membership-btn').addEventListener('click', applyForMembership);
@@ -1623,7 +1620,7 @@ function formatDateTimeUTC5(dateString) {
       });
     });
   }
-checkMOTMStatus();
+
   init();
 </script>
 </body>
