@@ -302,6 +302,7 @@
       <input type="text" id="full_name" placeholder="Ваше ФИО (обязательно)" required>
       <input type="text" id="username" placeholder="Никнейм (обязательно)" style="display:none;">
       <input type="tel" id="phone" placeholder="Номер телефона (обязательно)" required>
+      <small style="display: block; color: rgba(255,255,255,0.5); font-size: 0.8rem; margin-top: -5px; margin-bottom: 5px; text-align: left; width: 100%;">Пример: +7 777 123 45 67</small>
       <button type="submit">Зарегистрироваться</button>
     </form>
   </div>
@@ -334,9 +335,17 @@
   regForm.style.display = 'none';
 
   let welcomeHomeShownTime = 0;
-
-// Обновите функцию init() в <script>
-async function init() {
+  
+  // Phone input formatting
+  document.getElementById('phone').addEventListener('input', function (e) {
+      let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
+      if (!x[2] && x[1] !== '7') x[1] = '7';
+      if (x[1] === '8') x[1] = '7';
+      e.target.value = !x[2] ? '+' + x[1] : '+' + x[1] + ' (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
+  });
+  
+  // Обновите функцию init() в <script>
+  async function init() {
     if (!tg.initDataUnsafe?.user) {
         status.textContent = 'Откройте приложение через Telegram';
         return;
@@ -460,7 +469,13 @@ regForm.addEventListener('submit', async (e) => {
 
     // Остальной код обработчика формы остается без изменений...
     const fullName = document.getElementById('full_name').value.trim();
-    const phone = document.getElementById('phone').value.trim() || null;
+    const phoneInput = document.getElementById('phone').value;
+    const phoneDigits = phoneInput.replace(/\D/g, '');
+    if (phoneDigits.length < 11) {
+        alert('Введите полный номер телефона (11 цифр)');
+        return;
+    }
+    const phone = '+' + phoneDigits;
 
     const tgUsername = tg.initDataUnsafe.user.username || null;
     const manualUsername = usernameInput.value.trim();
@@ -480,7 +495,7 @@ regForm.addEventListener('submit', async (e) => {
       telegram_id: tg.initDataUnsafe.user.id,
       username: tgUsername || manualUsername,
       full_name: fullName,
-      phone: phone,
+      phone: phone, // сохранит в формате +77771112233
       points: 0,
       membership_status: 'New'
     };
