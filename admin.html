@@ -297,6 +297,37 @@
       color: #000;
     }
 
+    .btn-process-noshow {
+      background: linear-gradient(90deg, #ff4444, #ff6666);
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .btn-process-noshow:hover {
+      background: linear-gradient(90deg, #ff6666, #ff4444);
+      box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+    }
+
+    .status-no-show {
+      background: rgba(255, 68, 68, 0.15);
+      color: #ff4444;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .event-closed-badge {
+      display: inline-block;
+      background: rgba(255, 68, 68, 0.2);
+      color: #ff6666;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+
     .btn-delete {
       background: linear-gradient(90deg, #ff4444, #cc0000);
       color: #fff;
@@ -2465,6 +2496,13 @@
       const container = document.getElementById('registrations-list');
       container.innerHTML = '';
       
+      const statusMap = {
+        'registered': { emoji: '📝', text: 'Записан', class: 'status-registered' },
+        'checked_in': { emoji: '✅', text: 'Отметился', class: 'status-checked-in' },
+        'cancelled': { emoji: '❌', text: 'Отменил', class: 'status-cancelled' },
+        'no_show': { emoji: '⚠️', text: 'Не пришёл', class: 'status-no-show' }
+      };
+      
       registrations.forEach(reg => {
         const user = reg.users;
         const event = reg.events;
@@ -2473,13 +2511,9 @@
         
         const formattedDate = formatDateTimeInAlmaty(event.match_date);
         
-        const statusText = reg.status === 'registered' ? 'Записан' : 
-                          reg.status === 'cancelled' ? 'Отменен' : 
-                          reg.status === 'checked_in' ? 'Прошел чекин' : reg.status;
-        
-        const statusClass = reg.status === 'registered' ? 'status-registered' :
-                           reg.status === 'cancelled' ? 'status-cancelled' :
-                           'status-checked_in';
+        const statusInfo = statusMap[reg.status] || { emoji: '❓', text: reg.status, class: '' };
+        const statusText = statusInfo.emoji + ' ' + statusInfo.text;
+        const statusClass = statusInfo.class;
         
         const checkinAvailable = isCheckinAvailable(event.match_date);
         
@@ -3732,6 +3766,13 @@ async function loadStatsModal() {
       const container = document.getElementById('registrations-list-modal');
       container.innerHTML = '';
       
+      const statusMap = {
+        'registered': { emoji: '📝', text: 'Записан', class: 'status-registered' },
+        'checked_in': { emoji: '✅', text: 'Отметился', class: 'status-checked-in' },
+        'cancelled': { emoji: '❌', text: 'Отменил', class: 'status-cancelled' },
+        'no_show': { emoji: '⚠️', text: 'Не пришёл', class: 'status-no-show' }
+      };
+      
       registrations.forEach(reg => {
         const user = reg.users;
         const event = reg.events;
@@ -3740,13 +3781,9 @@ async function loadStatsModal() {
         
         const formattedDate = formatDateTimeInAlmaty(event.match_date);
         
-        const statusText = reg.status === 'registered' ? 'Записан' :
-                          reg.status === 'cancelled' ? 'Отменен' :
-                          reg.status === 'checked_in' ? 'Прошел чекин' : reg.status;
-        
-        const statusClass = reg.status === 'registered' ? 'status-registered' :
-                           reg.status === 'cancelled' ? 'status-cancelled' :
-                           'status-checked_in';
+        const statusInfo = statusMap[reg.status] || { emoji: '❓', text: reg.status, class: '' };
+        const statusText = statusInfo.emoji + ' ' + statusInfo.text;
+        const statusClass = statusInfo.class;
         
         const checkinAvailable = isCheckinAvailable(event.match_date);
         
@@ -3798,7 +3835,7 @@ async function loadStatsModal() {
       try {
         const { data: events, error } = await supabaseClient
           .from('events')
-          .select('*')
+          .select('id, match_name, match_date, bar_address, description, max_participants, is_open, created_at, points_award, is_closed, closed_at')
           .order('match_date', { ascending: false });
 
         if (error) {
@@ -3900,7 +3937,10 @@ async function loadStatsModal() {
           <div class="${itemClass}">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; flex-wrap: wrap;">
               <div style="flex: 1; min-width: 0;">
-                <strong style="font-size: 1.1rem; display: block; margin-bottom: 5px;">${event.match_name}</strong>
+                <strong style="font-size: 1.1rem; display: block; margin-bottom: 5px;">
+                  ${event.match_name}
+                  ${event.is_closed ? '<span class="event-closed-badge">🔴 Закрыто</span>' : ''}
+                </strong>
                 <div style="color: #aaa; font-size: 0.9rem;">
                   📅 ${formattedDate} (UTC+5, Алматы)<br>
                   📍 ${event.bar_address}
@@ -3936,6 +3976,11 @@ async function loadStatsModal() {
               <button class="btn-qr" onclick="showEventQR('${event.id}', '${event.match_name.replace(/'/g, "\\'")}', '${event.match_date}')">
                 📱 Показать QR для чекина
               </button>
+              ${category === 'past' && !event.is_closed ? `
+                <button class="btn-process-noshow" onclick="processNoShowsForEvent('${event.id}', '${event.match_name.replace(/'/g, "\\'")}')">
+                  ⚠️ Закрыть мероприятие
+                </button>
+              ` : ''}
               <button class="btn-delete-event" onclick="deleteEventModal('${event.id}', '${event.match_name.replace(/'/g, "\\'")}')">
                 🗑️ Удалить мероприятие
               </button>
@@ -5034,6 +5079,153 @@ async function loadStatsModal() {
       } catch (error) {
         console.error('Error deleting event:', error);
         alert('❌ Ошибка при удалении мероприятия: ' + error.message);
+      }
+    }
+
+    async function processNoShowsForEvent(eventId, eventName) {
+      if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert('Сначала войдите в систему');
+        return;
+      }
+      
+      // Проверяем, не закрыто ли уже мероприятие
+      const { data: eventData, error: eventError } = await supabaseClient
+        .from('events')
+        .select('is_closed, closed_at')
+        .eq('id', eventId)
+        .single();
+      
+      if (eventError) {
+        alert('❌ Ошибка проверки мероприятия: ' + eventError.message);
+        return;
+      }
+      
+      if (eventData.is_closed) {
+        alert(`⚠️ Мероприятие "${eventName}" уже было закрыто ранее:\n${new Date(eventData.closed_at).toLocaleString('ru-RU')}`);
+        return;
+      }
+      
+      if (!confirm(`⚠️ ЗАКРЫТЬ МЕРОПРИЯТИЕ "${eventName}"?\n\nЭто действие:\n✅ Обработает всех участников\n❌ Спишет 1 балл у не отметившихся\n🔒 Изменит их статус на "no_show"\n\n⚠️ Это действие нельзя отменить!\n\nПродолжить?`)) {
+        return;
+      }
+      
+      try {
+        // 1. Получаем всех участников мероприятия со статусом 'registered'
+        const { data: registrations, error: regError } = await supabaseClient
+          .from('registrations')
+          .select(`
+            id,
+            user_id,
+            status,
+            users (
+              id,
+              full_name,
+              points
+            )
+          `)
+          .eq('event_id', eventId)
+          .eq('status', 'registered');
+        
+        if (regError) throw regError;
+        
+        if (!registrations || registrations.length === 0) {
+          // Даже если нет участников, помечаем мероприятие как закрытое
+          const { error: closeError } = await supabaseClient
+            .from('events')
+            .update({
+              is_closed: true,
+              closed_at: new Date().toISOString()
+            })
+            .eq('id', eventId);
+          
+          if (closeError) throw closeError;
+          
+          alert('✅ Мероприятие закрыто.\n\nНет участников со статусом "registered" для обработки.');
+          loadAllEventsModal();
+          return;
+        }
+        
+        let processedCount = 0;
+        let skippedCount = 0;
+        let errors = [];
+        
+        // 2. Обрабатываем каждого участника
+        for (const reg of registrations) {
+          const user = reg.users;
+          if (!user) continue;
+          
+          const currentPoints = user.points || 0;
+          
+          try {
+            // Списываем балл только если больше 0
+            if (currentPoints > 0) {
+              const { error: pointsError } = await supabaseClient
+                .from('users')
+                .update({
+                  points: currentPoints - 1,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', user.id);
+              
+              if (pointsError) throw pointsError;
+            } else {
+              skippedCount++;
+            }
+            
+            // Меняем статус регистрации на no_show
+            const { error: statusError } = await supabaseClient
+              .from('registrations')
+              .update({
+                status: 'no_show',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', reg.id);
+            
+            if (statusError) throw statusError;
+            
+            processedCount++;
+            
+          } catch (err) {
+            errors.push(`${user.full_name}: ${err.message}`);
+            console.error(`Error processing user ${user.full_name}:`, err);
+          }
+        }
+        
+        // 3. Помечаем мероприятие как закрытое
+        const { error: closeError } = await supabaseClient
+          .from('events')
+          .update({
+            is_closed: true,
+            closed_at: new Date().toISOString()
+          })
+          .eq('id', eventId);
+        
+        if (closeError) throw closeError;
+        
+        // 4. Показываем результат
+        let message = `✅ Мероприятие "${eventName}" закрыто!\n\n`;
+        message += `📊 Обработано участников: ${processedCount}\n`;
+        message += `❌ Списано баллов: ${processedCount - skippedCount}\n`;
+        if (skippedCount > 0) {
+          message += `⚠️ Пропущено (0 баллов): ${skippedCount}\n`;
+        }
+        if (errors.length > 0) {
+          message += `\n❌ Ошибки (${errors.length}):\n${errors.slice(0, 3).join('\n')}`;
+          if (errors.length > 3) {
+            message += `\n... и ещё ${errors.length - 3}`;
+          }
+        }
+        
+        alert(message);
+        
+        // Обновляем данные на странице
+        loadAllEventsModal();
+        loadRegistrationsModal();
+        loadStatsModal();
+        
+      } catch (error) {
+        console.error('Error processing no-shows:', error);
+        alert('❌ Ошибка при закрытии мероприятия: ' + error.message);
       }
     }
 
