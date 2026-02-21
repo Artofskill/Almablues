@@ -38,81 +38,122 @@
     }
 
     .container {
-      max-width: 500px;
+      max-width: 600px;
       margin: 0 auto;
     }
 
+    /* Кнопка "Назад" */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 25px;
+      padding: 10px 15px;
+      background: rgba(212, 160, 23, 0.15);
+      color: var(--gold);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid rgba(212, 160, 23, 0.3);
+      transition: all 0.3s;
+    }
+
+    .back-btn:hover {
+      background: rgba(212, 160, 23, 0.25);
+      border-color: var(--gold);
+      transform: translateX(-3px);
+    }
+
+    .back-btn::before {
+      content: "←";
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    /* Header */
     header {
       text-align: center;
       margin-bottom: 2rem;
+    }
+
+    .header-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .header-icon {
+      font-size: 2.5rem;
+      margin-bottom: 5px;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
     }
 
     h1 {
       font-family: 'Oswald', sans-serif;
       color: var(--gold);
       font-size: 2rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .back-btn {
-      display: inline-block;
-      margin-bottom: 20px;
-      color: var(--gold);
-      text-decoration: none;
-      font-weight: 500;
-      font-size: 1.1rem;
-    }
-
-    .back-btn:hover {
-      text-decoration: underline;
+      line-height: 1.2;
+      margin-bottom: 0;
     }
 
     .event-info {
-      background: rgba(3, 70, 148, 0.2);
-      padding: 15px;
-      border-radius: 10px;
+      background: rgba(3, 70, 148, 0.15);
+      padding: 20px;
+      border-radius: 16px;
       margin-bottom: 2rem;
+      border: 2px solid rgba(3, 70, 148, 0.3);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
     .event-name {
       font-family: 'Oswald', sans-serif;
-      font-size: 1.4rem;
+      font-size: 1.5rem;
       color: var(--white);
-      margin-bottom: 5px;
+      margin-bottom: 8px;
+      line-height: 1.3;
     }
 
     .event-details {
       color: #aaa;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
+      line-height: 1.6;
     }
 
     .filters {
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 8px;
+      margin-bottom: 25px;
       flex-wrap: wrap;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 8px;
+      border-radius: 12px;
     }
 
     .filter-btn {
-      background: rgba(255, 255, 255, 0.1);
+      background: transparent;
       border: none;
-      color: var(--text-light);
-      padding: 8px 16px;
-      border-radius: 20px;
+      color: #aaa;
+      padding: 10px 18px;
+      border-radius: 8px;
       cursor: pointer;
       font-family: 'Roboto', sans-serif;
       font-size: 0.9rem;
+      font-weight: 500;
       transition: all 0.3s;
     }
 
     .filter-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-light);
     }
 
     .filter-btn.active {
-      background: var(--chelsea-blue);
+      background: linear-gradient(135deg, var(--chelsea-blue), var(--chelsea-blue-dark));
       color: var(--white);
-      font-weight: 500;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(3, 70, 148, 0.3);
     }
 
     .participants-list {
@@ -121,29 +162,47 @@
 
     .participant-item {
       background: rgba(255, 255, 255, 0.05);
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 10px;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
-      border-left: 4px solid #034694;
+      border-left: 4px solid var(--chelsea-blue);
+      transition: all 0.3s;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .participant-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateX(5px);
+      box-shadow: 0 4px 10px rgba(3, 70, 148, 0.2);
     }
 
     .participant-item.checked_in {
       border-left-color: #4CAF50;
     }
 
+    .participant-item.checked_in:hover {
+      box-shadow: 0 4px 10px rgba(76, 175, 80, 0.2);
+    }
+
     .participant-avatar {
-      width: 40px;
-      height: 40px;
-      background: var(--chelsea-blue);
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--chelsea-blue), var(--chelsea-blue-dark));
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-right: 15px;
+      margin-right: 16px;
       font-weight: bold;
-      font-size: 1.2rem;
+      font-size: 1.3rem;
+      box-shadow: 0 2px 8px rgba(3, 70, 148, 0.4);
+      flex-shrink: 0;
+    }
+
+    .participant-avatar.checked-in {
+      background: linear-gradient(135deg, #4CAF50, #388E3C);
     }
 
     .participant-info {
@@ -185,63 +244,159 @@
 
     .empty-state {
       text-align: center;
-      padding: 40px;
+      padding: 60px 20px;
       color: #aaa;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 16px;
+      border: 2px dashed rgba(255, 255, 255, 0.1);
     }
 
     .empty-state-icon {
-      font-size: 3rem;
-      margin-bottom: 15px;
+      font-size: 4rem;
+      margin-bottom: 20px;
+      opacity: 0.5;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .empty-state h3 {
+      color: var(--text-light);
+      margin-bottom: 10px;
+      font-size: 1.3rem;
     }
 
     .loading {
       text-align: center;
-      padding: 40px;
+      padding: 60px 20px;
       color: var(--gold);
+      font-size: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
     }
 
-    .stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 20px;
+    .loading::before {
+      content: '⏳';
+      font-size: 3rem;
+      animation: pulse 1.5s infinite;
     }
 
-    .stat-card {
-      background: rgba(3, 70, 148, 0.1);
-      padding: 15px;
-      border-radius: 8px;
-      text-align: center;
-    }
-
-    .stat-number {
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: var(--gold);
-    }
-
-    .stat-label {
-      font-size: 0.8rem;
-      color: #aaa;
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.1); }
     }
 
     footer {
       text-align: center;
       margin-top: 3rem;
-      padding-top: 1rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
       color: #777;
       font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 600px) {
+      body {
+        padding: 15px 10px;
+      }
+
+      .back-btn {
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+      }
+
+      h1 {
+        font-size: 1.8rem;
+      }
+
+      .header-icon {
+        font-size: 2.2rem;
+      }
+
+      .event-info {
+        padding: 16px;
+      }
+
+      .event-name {
+        font-size: 1.3rem;
+      }
+
+      .stats {
+        gap: 10px;
+      }
+
+      .stat-card {
+        padding: 14px 10px;
+      }
+
+      .stat-value {
+        font-size: 1.6rem;
+      }
+
+      .stat-label {
+        font-size: 0.75rem;
+      }
+
+      .filters {
+        gap: 6px;
+        padding: 6px;
+      }
+
+      .filter-btn {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+      }
+
+      .participant-item {
+        padding: 14px;
+      }
+
+      .participant-avatar {
+        width: 44px;
+        height: 44px;
+        font-size: 1.2rem;
+        margin-right: 14px;
+      }
+
+      .participant-name {
+        font-size: 0.95rem;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .back-btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      h1 {
+        font-size: 1.6rem;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .stat-card {
+        padding: 12px;
+      }
     }
   </style>
 </head>
 
 <body>
 <div class="container">
-  <a href="dashboard.html" class="back-btn">← Назад в Dashboard</a>
+  <a href="dashboard.html" class="back-btn">Назад</a>
   
   <header>
-    <h1 id="event-title">Участники мероприятия</h1>
+    <div class="header-content">
+      <div class="header-icon">👥</div>
+      <h1 id="event-title">Участники</h1>
+    </div>
   </header>
 
   <div id="event-details" class="event-info" style="display: none;">
@@ -250,16 +405,16 @@
 
   <div class="stats" id="stats-section" style="display: none;">
     <div class="stat-card">
-      <div class="stat-number" id="total-participants">0</div>
-      <div class="stat-label">Всего участников</div>
+      <div class="stat-value" id="total-participants">0</div>
+      <div class="stat-label">Всего</div>
     </div>
     <div class="stat-card">
-      <div class="stat-number" id="checked-in-participants">0</div>
+      <div class="stat-value" id="checked-in-participants">0</div>
       <div class="stat-label">Отметились</div>
     </div>
     <div class="stat-card">
-      <div class="stat-number" id="registered-participants">0</div>
-      <div class="stat-label">Ждут чекина</div>
+      <div class="stat-value" id="registered-participants">0</div>
+      <div class="stat-label">Ждут</div>
     </div>
   </div>
 
@@ -468,6 +623,7 @@
       const firstLetter = user.full_name ? user.full_name.charAt(0).toUpperCase() : '?';
       const isCheckedIn = participant.status === 'checked_in';
       const itemClass = isCheckedIn ? 'participant-item checked_in' : 'participant-item';
+      const avatarClass = isCheckedIn ? 'participant-avatar checked-in' : 'participant-avatar';
       
       const statusText = isCheckedIn ? 'Отметилcя' : 'Записан';
       const statusClass = isCheckedIn ? 'status-checked_in' : 'status-registered';
@@ -477,7 +633,7 @@
       
       html += `
         <div class="${itemClass}">
-          <div class="participant-avatar">${firstLetter}</div>
+          <div class="${avatarClass}">${firstLetter}</div>
           <div class="participant-info">
             <div class="participant-name">
               ${user.full_name || 'Аноним'}
@@ -498,5 +654,11 @@
   // Инициализация
   loadEventParticipants();
 </script>
+
+<footer>
+  <p>Chelsea FC Supporters Club Kazakhstan • 2026 by @Artofskill</p>
+</footer>
+
+</div>
 </body>
 </html>

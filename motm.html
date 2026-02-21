@@ -22,6 +22,27 @@
     .selected { border: 1px solid var(--gold); background: rgba(212, 160, 23, 0.05); }
     .selected .progress-bar-fill { background: var(--gold); }
     .selected .player-info { color: var(--gold); font-weight: bold; }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    }
+
+    /* Улучшенный hover эффект для карточек игроков */
+    .player-row:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: translateX(5px);
+    }
+
+    .player-row:active {
+        transform: scale(0.98);
+    }
   </style>
 </head>
 <body>
@@ -48,12 +69,37 @@
             document.getElementById('main-content').innerHTML = '<div class="card" style="text-align:center;">Пожалуйста, войдите через Dashboard.</div>';
             return;
         }
-        const { data: event } = await supabaseClient.from('events').select('*').order('match_date', { ascending: false }).limit(1).single();
-        if (event) {
-            document.getElementById('match-name').innerText = event.match_name;
-            document.getElementById('match-date').innerText = new Date(event.match_date).toLocaleString('ru-RU');
-            checkUserVote(event.id);
+        
+        // Берем последнее ПРОШЕДШЕЕ мероприятие (мероприятия в прошлом)
+        const { data: event, error } = await supabaseClient
+            .from('events')
+            .select('*')
+            .lt('match_date', new Date().toISOString())  // Только прошедшие
+            .order('match_date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        
+        if (error) {
+            console.error('Error loading event:', error);
+            document.getElementById('main-content').innerHTML = '<div class="card" style="text-align:center; color:#ff6666;">Ошибка загрузки мероприятия</div>';
+            return;
         }
+        
+        if (!event) {
+            document.getElementById('main-content').innerHTML = '<div class="card" style="text-align:center; color:#aaa;">Пока нет прошедших мероприятий для голосования</div>';
+            return;
+        }
+        
+        document.getElementById('match-name').innerText = event.match_name;
+        document.getElementById('match-date').innerText = new Date(event.match_date).toLocaleString('ru-RU', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        checkUserVote(event.id);
     }
 
     async function checkUserVote(eventId) {
@@ -73,27 +119,141 @@
     }
 
     async function castVote(eventId, playerName) {
-        const { error } = await supabaseClient.from('motm_votes').insert({ event_id: eventId, user_id: userId, player_name: playerName });
-        if (!error) {
-            await supabaseClient.rpc('increment_points', { user_id: userId, amount: 5 });
+        // Проверяем, не голосовал ли пользователь уже
+        const { data: existingVote } = await supabaseClient
+            .from('motm_votes')
+            .select('id')
+            .eq('event_id', eventId)
+            .eq('user_id', userId)
+            .maybeSingle();
+        
+        if (existingVote) {
+            alert('⚠️ Вы уже проголосовали за это мероприятие!');
             showResults(eventId, playerName);
+            return;
         }
+        
+        // Вставляем голос
+        const { error } = await supabaseClient
+            .from('motm_votes')
+            .insert({ 
+                event_id: eventId, 
+                user_id: userId, 
+                player_name: playerName 
+            });
+        
+        if (error) {
+            console.error('Error casting vote:', error);
+            
+            // Если ошибка уникальности (повторное голосование)
+            if (error.code === '23505') {
+                alert('⚠️ Вы уже проголосовали за это мероприятие!');
+                showResults(eventId, playerName);
+            } else {
+                alert('❌ Ошибка при голосовании: ' + error.message);
+            }
+            return;
+        }
+        
+        // Показываем результаты после успешного голосования
+        showResults(eventId, playerName);
+        
+        // Показываем уведомление об успешном голосовании
+        showVoteNotification();
     }
 
     async function showResults(eventId, userChoice = null) {
-        const { data: votes } = await supabaseClient.from('motm_votes').select('player_name').eq('event_id', eventId);
+        const { data: votes } = await supabaseClient
+            .from('motm_votes')
+            .select('player_name')
+            .eq('event_id', eventId);
+        
+        if (!votes) {
+            document.getElementById('main-content').innerHTML = '<div class="card" style="text-align:center; color:#aaa;">Ошибка загрузки результатов</div>';
+            return;
+        }
+        
+        const totalVotes = votes.length;
         const stats = {};
-        votes?.forEach(v => stats[v.player_name] = (stats[v.player_name] || 0) + 1);
+        votes.forEach(v => stats[v.player_name] = (stats[v.player_name] || 0) + 1);
+        
+        // Сортируем игроков по количеству голосов
+        const sortedPlayers = [...playersList].sort((a, b) => (stats[b] || 0) - (stats[a] || 0));
+        
         let html = '<div class="card">';
-        [...playersList].sort((a,b) => (stats[b]||0) - (stats[a]||0)).forEach(name => {
-            const percent = votes?.length ? Math.round(((stats[name]||0)/votes.length)*100) : 0;
-            html += `<div class="player-row ${name===userChoice?'selected':''}">
-                <div class="player-info"><span>${name} ${name===userChoice?'⭐':''}</span><span>${percent}%</span></div>
-                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${percent}%"></div></div>
+        
+        // Показываем общее количество голосов
+        if (totalVotes > 0) {
+            html += `<div style="text-align: center; padding: 12px; background: rgba(212, 160, 23, 0.1); border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(212, 160, 23, 0.3);">
+                <div style="font-size: 0.85rem; color: #aaa; margin-bottom: 3px;">Всего проголосовало</div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: var(--gold);">${totalVotes}</div>
+                <div style="font-size: 0.8rem; color: #888; margin-top: 2px;">${totalVotes === 1 ? 'человек' : totalVotes < 5 ? 'человека' : 'человек'}</div>
+            </div>`;
+        }
+        
+        // Показываем список игроков с результатами
+        sortedPlayers.forEach((name, index) => {
+            const voteCount = stats[name] || 0;
+            const percent = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+            const isUserChoice = name === userChoice;
+            const isLeader = index === 0 && voteCount > 0;
+            
+            html += `<div class="player-row ${isUserChoice ? 'selected' : ''}" style="${isLeader ? 'background: rgba(212, 160, 23, 0.08);' : ''}">
+                <div class="player-info">
+                    <span>
+                        ${isLeader && voteCount > 0 ? '👑 ' : ''}${name}${isUserChoice ? ' ⭐' : ''}
+                    </span>
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.85rem; color: #aaa;">${voteCount}</span>
+                        <span style="font-weight: bold;">${percent}%</span>
+                    </span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" style="width:${percent}%"></div>
+                </div>
             </div>`;
         });
-        document.getElementById('main-content').innerHTML = html + '</div>';
+        
+        html += '</div>';
+        document.getElementById('main-content').innerHTML = html;
     }
+    
+    // Функция показа уведомления после голосования
+    function showVoteNotification() {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--chelsea-blue), var(--gold));
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+            animation: slideDown 0.3s ease-out;
+        `;
+        notification.innerHTML = `
+            ✅ Спасибо за ваш голос!<br>
+            <small style="font-size: 0.85rem; font-weight: 400;">Ваш выбор учтен</small>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(-50%) translateY(-20px)';
+            notification.style.transition = 'all 0.3s ease-out';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
+
     init();
 </script>
 </body>

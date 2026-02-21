@@ -39,13 +39,31 @@
     }
 
     .container {
-      max-width: 500px;
+      max-width: 100%;
       margin: 0 auto;
+      padding: 15px;
+    }
+
+    @media (min-width: 768px) {
+      .container {
+        max-width: 900px;
+        padding: 20px;
+      }
     }
 
     header {
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      margin-bottom: 0.3rem;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      color: #aaa;
     }
 
     h1 {
@@ -84,36 +102,171 @@
 
     .dashboard-grid {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 15px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
       margin-bottom: 2rem;
+      padding: 0 5px;
+    }
+
+    /* На очень узких экранах - 2 колонки */
+    @media (max-width: 360px) {
+      .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+    }
+
+    /* На планшетах и десктопе - 4 колонки */
+    @media (min-width: 768px) {
+      .dashboard-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        max-width: 800px;
+        margin: 0 auto 2rem;
+      }
     }
 
     .card {
       background: rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 20px;
-      transition: transform 0.2s;
+      border-radius: 20px;
+      padding: 16px 12px;
+      transition: all 0.3s ease;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      aspect-ratio: 1 / 1; /* Делает квадрат */
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      min-height: 0; /* Для правильной работы aspect-ratio */
     }
 
     .card:hover {
-      transform: translateY(-2px);
-      background: rgba(255, 255, 255, 0.08);
+      transform: scale(1.05);
+      background: rgba(3, 70, 148, 0.15);
+      border-color: var(--gold);
+      box-shadow: 0 8px 20px rgba(212, 160, 23, 0.3);
+    }
+
+    .card:active {
+      transform: scale(0.95);
+    }
+
+    /* Градиентная полоска сверху */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--chelsea-blue), var(--gold));
     }
 
     .card-title {
       font-family: 'Oswald', sans-serif;
-      font-size: 1.2rem;
-      color: var(--white);
-      margin-bottom: 10px;
-      line-height: 1.3;
+      font-size: 2rem;
+      margin-bottom: 6px;
+      line-height: 1;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
     }
 
+    .card-label {
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.75rem;
+      color: var(--text-light);
+      font-weight: 500;
+      line-height: 1.2;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Скрываем описание в иконочном виде */
     .card-description {
+      display: none;
+    }
+
+    /* Скрываем кнопки - сама карточка кликабельна */
+    .card .btn,
+    .card .btn-gold,
+    .card .btn-small,
+    .card .event-actions {
+      display: none;
+    }
+
+    /* Карточка мероприятий - занимает полную строку */
+    .card.events-card {
+      grid-column: 1 / -1; /* Занимает все колонки */
+      aspect-ratio: auto; /* Убираем квадрат */
+      min-height: 180px;
+      padding: 16px;
+      text-align: left;
+      align-items: flex-start;
+    }
+
+    /* Для карточки мероприятий показываем описание и контент */
+    .card.events-card .card-title {
+      font-size: 1.3rem;
+      color: var(--gold);
+      text-align: left;
+      margin-bottom: 8px;
+    }
+
+    .card.events-card .card-description {
+      display: block;
+      font-size: 0.85rem;
+      text-align: left;
+      margin-bottom: 12px;
       color: #aaa;
+    }
+
+    .card.events-card .events-list {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    .card.events-card .btn-gold {
+      display: block;
+      width: 100%;
+      padding: 10px;
       font-size: 0.9rem;
-      margin-bottom: 15px;
-      line-height: 1.4;
+      margin-top: auto;
+    }
+
+    /* Компактный вид мероприятий в маленькой карточке */
+    .events-list .event-item {
+      background: rgba(3, 70, 148, 0.15);
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border-left: 3px solid var(--gold);
+    }
+
+    .events-list .event-item h4 {
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+    }
+
+    .events-list .event-date,
+    .events-list .event-address {
+      font-size: 0.8rem;
+    }
+
+    .events-list .event-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .events-list .event-actions .btn-small {
+      display: block;
+      padding: 6px 12px;
+      font-size: 0.8rem;
     }
 
     .btn {
@@ -178,6 +331,26 @@
 
     .btn-disabled:hover {
       background: #666;
+    }
+
+    /* Кнопки внутри карточек */
+    .card .btn,
+    .card .btn-gold,
+    .card .btn-small {
+      margin-top: auto;
+    }
+
+    .card .event-actions {
+      margin-top: auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .card .event-actions .btn,
+    .card .event-actions .btn-small {
+      flex: 1;
+      min-width: 120px;
     }
 
     .events-list {
@@ -273,18 +446,6 @@
       border-top: 1px solid rgba(255, 255, 255, 0.1);
       color: #777;
       font-size: 0.9rem;
-    }
-
-    .back-btn {
-      display: inline-block;
-      margin-top: 1rem;
-      color: var(--gold);
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .back-btn:hover {
-      text-decoration: underline;
     }
 
     .event-actions {
@@ -453,6 +614,24 @@
       color: #2196F3;
       border: 1px solid #2196F3;
     }
+
+    /* Пульсация для карточки Membership */
+    @keyframes subtle-pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(212, 160, 23, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 0 8px rgba(212, 160, 23, 0);
+      }
+    }
+
+    .card#membership-card {
+      animation: subtle-pulse 3s infinite;
+    }
+
+    .card#membership-card:hover {
+      animation: none;
+    }
   </style>
 </head>
 
@@ -474,82 +653,90 @@
   </div>
 
   <div class="dashboard-grid">
+  
+  <!-- ПЕРВЫЙ РЯД: Рейтинги, Мои записи, QR -->
+  
+  <!-- Рейтинги -->
+  <div class="card" onclick="location.href='ratings.html'">
+    <div class="card-title">🏆</div>
+    <div class="card-label">Рейтинг</div>
+  </div>
+
+  <!-- Мои записи -->
+  <div class="card" onclick="location.href='my-registrations.html'">
+    <div class="card-title">🎫</div>
+    <div class="card-label">Мои записи</div>
+  </div>
+
+  <!-- QR сканер -->
+  <div class="card" onclick="openQRScannerModal(); event.stopPropagation();">
+    <div class="card-title">📱</div>
+    <div class="card-label">QR Чекин</div>
+  </div>
+
+  <!-- ВТОРОЙ РЯД: Мероприятия (полная ширина) -->
+  
+  <!-- Мероприятия -->
+  <div class="card events-card">
+    <h3 class="card-title">📅 Мероприятия</h3>
+    <p class="card-description">Ближайшие события</p>
     
-    <!-- Заявка на членство -->
-    <div class="card" id="membership-card">
-      <h3 class="card-title">👥 Membership</h3>
-      <p class="card-description">Подайте заявку на официальное членство в AlmaBlues</p>
-      
-      <div id="membership-status-info"></div>
-      
-      <div id="membership-actions">
-        <button class="btn btn-gold" id="membership-btn">Подать заявку</button>
-        <button class="btn btn-red" id="cancel-membership-btn" style="display: none; margin-top: 10px;">Отозвать заявку</button>
-      </div>
-    </div>
-
-    <!-- Рейтинги -->
-    <div class="card">
-      <h3 class="card-title">🏆 Рейтинги</h3>
-      <p class="card-description">Топ активных участников</p>
-      <a href="ratings.html" class="btn btn-gold" id="ratings-btn">Посмотреть рейтинг</a>
-    </div>
-
-    <!-- Мероприятия -->
-    <div class="card">
-      <h3 class="card-title">📅 Ближайшие мероприятия</h3>
-      <p class="card-description">Текущее и предстоящие мероприятия</p>
-      
-      <div class="events-list" id="events-list">
-        <div class="event-item">
-          <div class="event-info">
-            <h4>Загрузка мероприятий...</h4>
-          </div>
+    <div class="events-list" id="events-list">
+      <div class="event-item">
+        <div class="event-info">
+          <h4>Загрузка мероприятий...</h4>
         </div>
       </div>
-      
-      <a href="all-events.html" class="btn btn-gold" style="margin-top: 15px;">Все мероприятия</a>
-    </div>
-
-<!-- Мои записи -->
-<div class="card">
-  <h3 class="card-title">🎫 Мои записи</h3>
-  <p class="card-description">Просмотр и управление вашими регистрациями на мероприятия</p>
-  <div class="event-actions">
-    <a href="my-registrations.html" class="btn btn-small btn-gold" id="my-registrations-btn">Мои записи</a>
-  </div>
-</div>
-
-    <!-- QR код для отметки -->
-    <div class="card">
-      <h3 class="card-title">📱 Отметка о посещении</h3>
-      <p class="card-description">Отсканируйте QR код мероприятия для отметки</p>
-      <div class="event-actions">
-        <button class="btn btn-small btn-gold" id="scan-qr-btn" onclick="openQRScannerModal()">
-          📱 Отсканировать QR код
-        </button>
-      </div>
-      <div id="checkin-status" style="margin-top: 10px; font-size: 0.9rem;"></div>
     </div>
     
-    <!-- Чанты -->
-    <div class="card">
-      <h3 class="card-title">🎵 Чанты</h3>
-      <p class="card-description">Тексты и аудио чантов Chelsea FC</p>
-      <a href="chants.html" class="btn btn-gold">Открыть чанты</a>
-    </div>
+    <a href="all-events.html" class="btn btn-gold">Все мероприятия</a>
+  </div>
 
-    <!-- Турнирная таблица -->
-    <div class="card">
-      <h3 class="card-title">📊 Турнирная таблица</h3>
-      <p class="card-description">Текущее положение Chelsea в АПЛ</p>
-      <a href="table.html" class="btn btn-gold">Посмотреть таблицу</a>
+  <!-- ТРЕТИЙ РЯД: Membership, Чанты, MOTM -->
+  
+  <!-- Заявка на членство -->
+  <div class="card" id="membership-card" onclick="handleMembershipClick()">
+    <div class="card-title">👥</div>
+    <div class="card-label">Membership</div>
+    
+    <!-- Скрытые элементы для функциональности -->
+    <div id="membership-status-info" style="display: none;"></div>
+    <div id="membership-actions" style="display: none;">
+      <button class="btn btn-gold" id="membership-btn">Подать заявку</button>
+      <button class="btn btn-red" id="cancel-membership-btn">Отозвать заявку</button>
     </div>
   </div>
+
+  <!-- Чанты -->
+  <div class="card" onclick="location.href='chants.html'">
+    <div class="card-title">🎵</div>
+    <div class="card-label">Чанты</div>
+  </div>
+
+  <!-- MOTM -->
+  <div class="card" onclick="location.href='motm.html'">
+    <div class="card-title">⭐</div>
+    <div class="card-label">MOTM</div>
+  </div>
+
+  <!-- ЧЕТВЕРТЫЙ РЯД: Турнирная таблица -->
+  
+  <!-- Турнирная таблица -->
+  <div class="card" onclick="location.href='table.html'">
+    <div class="card-title">📊</div>
+    <div class="card-label">Таблица</div>
+  </div>
+
+  <!-- Профиль -->
+  <div class="card" onclick="location.href='profile.html'">
+    <div class="card-title">👤</div>
+    <div class="card-label">Профиль</div>
+  </div>
+
+</div>
 
   <footer>
     <p>Chelsea FC Supporters Club Kazakhstan • 2026 by @Artofskill</p>
-    <a href="profile.html" class="back-btn">← Вернуться в профиль</a>
   </footer>
 </div>
 
@@ -1548,6 +1735,24 @@ function formatDateTimeUTC5(dateString) {
         }
       });
     });
+  }
+
+  // Функция для клика по карточке Membership
+  function handleMembershipClick() {
+    const membershipBtn = document.getElementById('membership-btn');
+    const cancelBtn = document.getElementById('cancel-membership-btn');
+    
+    // Кликаем на видимую кнопку
+    if (membershipBtn && membershipBtn.style.display !== 'none') {
+      membershipBtn.click();
+    } else if (cancelBtn && cancelBtn.style.display !== 'none') {
+      cancelBtn.click();
+    }
+  }
+
+  // Заглушка для MOTM
+  function showMotmComingSoon() {
+    alert('⭐ Функция "Игрок матча" в разработке!\n\nСкоро здесь можно будет голосовать за лучшего игрока каждого матча.');
   }
 
   init();

@@ -31,274 +31,389 @@
       background: var(--bg-dark);
       color: var(--text-light);
       min-height: 100vh;
-      padding: 20px;
+      padding: 20px 15px;
     }
     
     .container {
       max-width: 800px;
       margin: 0 auto;
     }
+
+    /* Кнопка "Назад" */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 25px;
+      padding: 10px 15px;
+      background: rgba(212, 160, 23, 0.15);
+      color: var(--gold);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid rgba(212, 160, 23, 0.3);
+      transition: all 0.3s;
+    }
+
+    .back-btn:hover {
+      background: rgba(212, 160, 23, 0.25);
+      border-color: var(--gold);
+      transform: translateX(-3px);
+    }
+
+    .back-btn::before {
+      content: "←";
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
     
+    /* Header */
     header {
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 2.5rem;
+      padding: 0 5px;
+    }
+
+    .header-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .header-icon {
+      font-size: 2.5rem;
+      margin-bottom: 5px;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
     }
     
     h1 {
       font-family: 'Oswald', sans-serif;
       color: var(--gold);
-      font-size: 2.5rem;
+      font-size: 2.2rem;
+      line-height: 1;
+      margin-bottom: 0;
+    }
+
+    .header-subtitle {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.8rem;
+      color: var(--white);
       margin-bottom: 0.5rem;
     }
+
+    .header-description {
+      color: #aaa;
+      font-size: 0.95rem;
+      max-width: 400px;
+      margin: 0 auto;
+    }
     
+    /* Категории чантов */
     .chant-category {
-      margin-bottom: 2rem;
+      margin-bottom: 2.5rem;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 20px;
+      border-radius: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.3s;
+    }
+
+    .chant-category:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(212, 160, 23, 0.2);
     }
     
     .category-title {
       font-family: 'Oswald', sans-serif;
       color: var(--gold);
       font-size: 1.5rem;
-      margin-bottom: 1rem;
-      padding-bottom: 5px;
+      margin-bottom: 1.2rem;
+      padding-bottom: 10px;
       border-bottom: 2px solid rgba(212, 160, 23, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     
+    /* Карточки чантов */
     .chant-item {
       background: rgba(255, 255, 255, 0.05);
-      padding: 15px;
-      border-radius: 10px;
+      padding: 18px;
+      border-radius: 12px;
       margin-bottom: 15px;
       border-left: 4px solid var(--gold);
+      transition: all 0.3s;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .chant-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateX(5px);
+      box-shadow: 0 4px 12px rgba(212, 160, 23, 0.2);
+    }
+
+    .chant-item:last-child {
+      margin-bottom: 0;
     }
     
     .chant-title {
       color: var(--white);
       font-weight: bold;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       font-size: 1.1rem;
       text-transform: uppercase;
-    }
-    
-    .chant-text {
-      line-height: 1.6;
-      white-space: pre-line;
-      font-size: 1rem;
       letter-spacing: 0.5px;
     }
     
+    .chant-text {
+      line-height: 1.7;
+      white-space: pre-line;
+      font-size: 1rem;
+      letter-spacing: 0.3px;
+      color: var(--text-light);
+    }
+    
+    /* Footer */
     footer {
       text-align: center;
       margin-top: 3rem;
-      padding-top: 1rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
       color: #777;
       font-size: 0.9rem;
-    }
-    
-    .back-btn {
-      display: inline-block;
-      margin-top: 1rem;
-      color: var(--gold);
-      text-decoration: none;
-      font-weight: 500;
-    }
-    
-    .back-btn:hover {
-      text-decoration: underline;
+      line-height: 1.5;
     }
 
-    @media (max-width: 480px) {
-      h1 { font-size: 2rem; }
+    /* Мобильная адаптация */
+    @media (max-width: 600px) {
+      body {
+        padding: 15px 10px;
+      }
+      
+      h1 {
+        font-size: 1.9rem;
+      }
+      
+      .header-subtitle {
+        font-size: 1.6rem;
+      }
+
+      .header-icon {
+        font-size: 2.2rem;
+      }
+      
+      .header-description {
+        font-size: 0.9rem;
+        padding: 0 10px;
+      }
+      
+      .back-btn {
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+      }
+
+      .chant-category {
+        padding: 16px;
+      }
+      
+      .category-title {
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+      }
+
+      .chant-item {
+        padding: 15px;
+      }
+
+      .chant-title {
+        font-size: 1rem;
+      }
+
+      .chant-text {
+        font-size: 0.95rem;
+      }
+    }
+
+    @media (max-width: 400px) {
+      h1 {
+        font-size: 1.7rem;
+      }
+      
+      .header-subtitle {
+        font-size: 1.4rem;
+      }
+      
+      .back-btn {
+        width: 100%;
+        justify-content: center;
+      }
     }
   </style>
 </head>
 
 <body>
   <div class="container">
+    <a href="dashboard.html" class="back-btn">Назад</a>
+    
     <header>
-      <h1>AlmaBlues</h1>
-      <p>Chelsea FC Chants — Almaty Supporters</p>
+      <div class="header-content">
+        <div class="header-icon">🎵</div>
+        <h1>Чанты</h1>
+        <div class="header-subtitle">Chelsea FC</div>
+        <p class="header-description">Наши любимые кричалки на Стэмфорд Бридж</p>
+      </div>
     </header>
     
     <div class="chant-category">
-      <h2 class="category-title">🔵 Classic Anthems</h2>
+      <h2 class="category-title"><span>🔵</span> Classic Anthems</h2>
       
       <div class="chant-item">
         <div class="chant-title">Blue is the Colour</div>
-        <div class="chant-text">
-          Blue is the colour, football is the game
-          We're all together, and winning is our aim
-          So cheer us on through the sun and rain
-          'Cause Chelsea, Chelsea is our name!
-        </div>
+        <div class="chant-text">Blue is the colour, football is the game
+We're all together, and winning is our aim
+So cheer us on through the sun and rain
+'Cause Chelsea, Chelsea is our name!</div>
       </div>
 
       <div class="chant-item">
         <div class="chant-title">Carefree</div>
-        <div class="chant-text">
-          CAREFREE WHEREVER WE MAY BE 
-          WE ARE THE FAMOUS CFC 
-          AND WE DON'T GIVE A FUCK 
-          WHOEVER YOU MAY BE 
-          COS WE ARE THE FAMOUS CFC
-        </div>
+        <div class="chant-text">CAREFREE WHEREVER WE MAY BE 
+WE ARE THE FAMOUS CFC 
+AND WE DON'T GIVE A FUCK 
+WHOEVER YOU MAY BE 
+COS WE ARE THE FAMOUS CFC</div>
       </div>
 
       <div class="chant-item">
         <div class="chant-title">Keep The Blue Flag Flying High</div>
-        <div class="chant-text">
-          FLYING HIGH UP IN THE SKY 
-          WE'LL KEEP THE BLUE FLAG FLYING HIGH 
-          FROM STAMFORD BRIDGE TO WEMBLEY 
-          WE'LL KEEP THE BLUE FLAG FLYING HIGH
-        </div>
+        <div class="chant-text">FLYING HIGH UP IN THE SKY 
+WE'LL KEEP THE BLUE FLAG FLYING HIGH 
+FROM STAMFORD BRIDGE TO WEMBLEY 
+WE'LL KEEP THE BLUE FLAG FLYING HIGH</div>
       </div>
     </div>
 
     <div class="chant-category">
-      <h2 class="category-title">🛡️ Loyalty & Pride</h2>
+      <h2 class="category-title"><span>🛡️</span> Loyalty & Pride</h2>
       
       <div class="chant-item">
         <div class="chant-title">We Love You Chelsea</div>
-        <div class="chant-text">
-          WE LOVE YOU CHELSEA WE DO 
-          WE LOVE YOU CHELSEA WE DO 
-          WE LOVE YOU CHELSEA WE DO 
-          OH CHELSEA, WE LOVE YOU
-        </div>
+        <div class="chant-text">WE LOVE YOU CHELSEA WE DO 
+WE LOVE YOU CHELSEA WE DO 
+WE LOVE YOU CHELSEA WE DO 
+OH CHELSEA, WE LOVE YOU</div>
       </div>
 
       <div class="chant-item">
         <div class="chant-title">Chelsea Till I Die</div>
-        <div class="chant-text">
-          CHELSEA TILL I DIE 
-          I'M CHELSEA TILL I DIE 
-          I KNOW I AM I'M SURE I AM 
-          I'M CHELSEA TILL I DIE
-        </div>
+        <div class="chant-text">CHELSEA TILL I DIE 
+I'M CHELSEA TILL I DIE 
+I KNOW I AM I'M SURE I AM 
+I'M CHELSEA TILL I DIE</div>
       </div>
 
       <div class="chant-item">
         <div class="chant-title">We All Follow</div>
-        <div class="chant-text">
-          WE ALL FOLLOW THE CHELSEA 
-          OVER LAND AND SEA 
-          WE ALL FOLLOW THE CHELSEA 
-          ONTO VICTORY!
-        </div>
+        <div class="chant-text">WE ALL FOLLOW THE CHELSEA 
+OVER LAND AND SEA 
+WE ALL FOLLOW THE CHELSEA 
+ONTO VICTORY!</div>
       </div>
 
       <div class="chant-item">
         <div class="chant-title">Super Chelsea</div>
-        <div class="chant-text">
-          AND IT'S SUPER CHELSEA 
-          SUPER CHELSEA FC 
-          WE ARE BY FAR THE GREATEST TEAM 
-          THE WORLD HAS EVER SEEN
-        </div>
+        <div class="chant-text">AND IT'S SUPER CHELSEA 
+SUPER CHELSEA FC 
+WE ARE BY FAR THE GREATEST TEAM 
+THE WORLD HAS EVER SEEN</div>
       </div>
     </div>
 
     <div class="chant-category">
-      <h2 class="category-title">🏆 Champions</h2>
+      <h2 class="category-title"><span>🏆</span> Champions</h2>
       
       <div class="chant-item">
         <div class="chant-title">Champions of Europe</div>
-        <div class="chant-text">
-          WE KNOW WHAT WE ARE 
-          WE KNOW WHAT WE ARE 
-          CHAMPIONS OF EUROPE 
-          WE KNOW WHAT WE ARE
-        </div>
+        <div class="chant-text">WE KNOW WHAT WE ARE 
+WE KNOW WHAT WE ARE 
+CHAMPIONS OF EUROPE 
+WE KNOW WHAT WE ARE</div>
       </div>
 
       <div class="chant-item">
         <div class="chant-title">Zigger Zagger</div>
-        <div class="chant-text">
-          OH WHEN THE BLUES GO STEAMING IN 
-          OH WHEN THE BLUES GO STEAMING IN  
-          I WANNA BE IN THAT NUMBER 
-          OH WHEN THE BLUES GO STEAMING IN
-        </div>
+        <div class="chant-text">OH WHEN THE BLUES GO STEAMING IN 
+OH WHEN THE BLUES GO STEAMING IN  
+I WANNA BE IN THAT NUMBER 
+OH WHEN THE BLUES GO STEAMING IN</div>
       </div>
     </div>
 
     <div class="chant-category">
-      <h2 class="category-title">👤 Players</h2>
+      <h2 class="category-title"><span>👤</span> Players</h2>
       
       <div class="chant-item">
         <div class="chant-title">Cole Palmer</div>
-        <div class="chant-text">
-          RUNNING DOWN THE LEFT AND RIGHT 
-          COLE PALMER IS DYNAMITE 
-          SIGN HIM UP FOR 8 MORE YEARS 
-          CHELSEA BOYS ARE ON THE BEERS
-        </div>
+        <div class="chant-text">RUNNING DOWN THE LEFT AND RIGHT 
+COLE PALMER IS DYNAMITE 
+SIGN HIM UP FOR 8 MORE YEARS 
+CHELSEA BOYS ARE ON THE BEERS</div>
       </div>
 
       <div class="chant-item">
         <div class="chant-title">Marc Cucurella</div>
-        <div class="chant-text">
-          CUCURELLA, CUCURELLA 
-          HE EATS PAELLA 
-          HE DRINKS ESTRELLA 
-          HIS HAIR IS FUCKING MASSIVE
-        </div>
+        <div class="chant-text">CUCURELLA, CUCURELLA 
+HE EATS PAELLA 
+HE DRINKS ESTRELLA 
+HIS HAIR IS FUCKING MASSIVE</div>
       </div>
 
       <div class="chant-item">
         <div class="chant-title">Benoit Badiashile</div>
-        <div class="chant-text">
-          TODD BOEHLY WENT TO FRANCE 
-          IN A LAMBORGHINE 
-          BOUGHT US BACK A CENTER BACK 
-          BENOIT BADIASHILE
-        </div>
+        <div class="chant-text">TODD BOEHLY WENT TO FRANCE 
+IN A LAMBORGHINE 
+BOUGHT US BACK A CENTER BACK 
+BENOIT BADIASHILE</div>
       </div>
       
       <div class="chant-item">
         <div class="chant-title">Super Frankie Lampard</div>
-        <div class="chant-text">
-          Super, super Frank
-          Super, super Frank
-          Super, super Frank
-          Super Frankie Lampard!
-        </div>
+        <div class="chant-text">Super, super Frank
+Super, super Frank
+Super, super Frank
+Super Frankie Lampard!</div>
       </div>
     </div>
 
     <div class="chant-category">
-      <h2 class="category-title">🔥 Rivalries</h2>
+      <h2 class="category-title"><span>🔥</span> Rivalries</h2>
       
       <div class="chant-item">
         <div class="chant-title">Fuck Them All</div>
-        <div class="chant-text">
-          FUCK THEM ALL FUCK THEM ALL 
-          UNITED, WEST HAM, LIVERPOOL 
-          COS WE ARE THE CHELSEA 
-          AND WE ARE THE BEST 
-          WE ARE THE CHELSEA 
-          SO FUCK ALL THE REST
-        </div>
+        <div class="chant-text">FUCK THEM ALL FUCK THEM ALL 
+UNITED, WEST HAM, LIVERPOOL 
+COS WE ARE THE CHELSEA 
+AND WE ARE THE BEST 
+WE ARE THE CHELSEA 
+SO FUCK ALL THE REST</div>
       </div>
 
       <div class="chant-item">
         <div class="chant-title">Tottenham</div>
-        <div class="chant-text">
-          TOTTENHAM GET BATTERED 
-          EVERYWHERE THEY GO 
-          TOTTENHAM GET BATTERED 
-          EVERYWHERE THEY GO 
-          EVERYWHERE THEY GO 
-          EVERYWHERE THEY GO
-        </div>
+        <div class="chant-text">TOTTENHAM GET BATTERED 
+EVERYWHERE THEY GO 
+TOTTENHAM GET BATTERED 
+EVERYWHERE THEY GO 
+EVERYWHERE THEY GO 
+EVERYWHERE THEY GO</div>
       </div>
     </div>
     
     <footer>
       <p>Chelsea FC Supporters Club Kazakhstan • 2026 by @Artofskill</p>
-      <a href="dashboard.html" class="back-btn">← Вернуться в дашборд</a>
     </footer>
   </div>
 </body>
